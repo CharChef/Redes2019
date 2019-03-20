@@ -1,0 +1,102 @@
+Informe Laboratorio 0 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+2-	ls = Listar
+	cp = Copiar
+	rm = Remover
+	rmdir = Remover directorio
+	mkdir = Crear directorio
+	tar y zip = Comando para archivos comprimidos
+	vi y nano = Editores de texto
+	mc = Midnight Commander, explorador de archivos similar a Total Commander
+	man = Manual
+
+3- [Host]
+   $ mkdir VM && cd VM
+
+4- [Host]
+   $ vstart pc1
+
+5- Lanza un error en el host al intentar cargar la fuente.
+
+7- [Host]
+   $ echo -e "pc2[0]=A\npc2[1]=B" >> lab.conf
+   $ mkdir pc2
+   $ lstart
+
+6- [pc1]
+   # echo "texto archivo pc1" >> archivoPC1.txt
+
+   [pc2]
+   # echo "texto archivo pc2" >> archivoPC2.txt
+
+8- [Host]
+   $ vconfig pc1 --eth1=B
+
+9- [Host]
+   $ vlist
+   
+   USER             VHOST               PID       SIZE  INTERFACES
+   redes            pc2                3783       9220  eth0 @ A, eth1 @ B
+   redes            pc1                4690       9220  
+
+   Total virtual machines:       2    (you),        2    (all users).
+   Total consumed memory:    18440 KB (you),    18440 KB (all users).
+
+   Se visualizan las maquinas virtuales inicializadas y las interfaces definidas en el archivo lab.conf. Las
+   interfaces definidas con el comando vconfig no figuran.
+
+10- [Host]
+    $ vconfig pc1 --eth1=
+
+11- [Host]
+    $ vlist
+
+    USER             VHOST               PID       SIZE  INTERFACES
+    redes            pc2                3783       9220  eth0 @ A, eth1 @ B
+    redes            pc1                4690       9220
+
+    Total virtual machines:	 2    (you),        2    (all users).
+    Total consumed memory:    18440 KB (you),    18440 KB (all users).
+
+    Se visualiza la misma informacion que antes. Los cambios se ven con el comando ip addr show desde el guest pc2.
+
+12- [pc1]
+    # init 0
+
+13- [Host]
+    # vhalt pc2
+
+14- [pc1]
+    # cat archivoPC1.txt
+    texto archivo pc1
+
+    NOTA: El archivo se conservo
+
+15- [pc1]
+    # echo "Agrego una linea" >> archivoPC1.txt
+
+    [Host]
+    $ vcrash pc1
+
+16- [pc1]
+    # cat archivoPC1.txt
+    texto archivo pc1
+
+    NOTA: El archivo existe pero no conservo los cambios
+
+17- [Host]
+    $ vhalt pc1
+
+18- [Host]
+    $ rm pc1.disk pc2.disk
+
+19- lclean es una herramienta para eliminar archivos temporales dentro de un directorio
+    de laboratorio de Netkit, es decir, funciona en el sistema de archivos del host.
+    En cambio vclean, segun el manual, es el boton de panico de Netkit, que permite detener
+    procesos y restaurar configuraciones modificadas por Netkit durante ejecuciones pasadas.

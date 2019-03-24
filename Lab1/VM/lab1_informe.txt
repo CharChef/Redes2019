@@ -1,0 +1,132 @@
+Informe Laboratorio 1 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+1- unzip: recibe como argumentos el nombre del archivo/s y/o el parametro -d [directorio]
+   donde se puede setear el directorio en donde desea descomprimir. Descomprimimos el archivo
+   de laboratorio proporcionado por la catedra utilizando este comando.
+
+2- lstart -p: inicializa los equipos definidos en el archivo de laboratorio. El parametro -p
+   genera que la iniializacion de las maquinas se realice en paralelo.
+
+3- [pc1/pc2]
+   $ ip link show
+
+   nota:"ip link" es un comando un comando para manipular las redes y dispositivos, link en particular
+	es el dispositivo de red y corresponde al comando para mostrar o cambiar estados de es dispositivo
+	agregando el argumento "show NAME" muestra el nombre de red con ese nombre espesifico, si no se
+	agrega un nombre como argumento muestra todos los dispositivos
+	el comando se ejecuto en cada una de las pc virtualizadas para verificar que efecitvamente
+         tienen las interfaces eth0 en ambas
+
+4- [pc1/pc2]
+   ip link set eth0 up
+   nota:El comando "ip link" para dispositivos de red se agrega el argumento set <device> up para setearlo
+	en conectado/disponible 
+
+5- [pc1]
+   # ip address add 192.168.1.1/24 dev eth0
+
+   [pc2]
+   # ip a a 192.168.1.2/24 dev eth0
+
+   nota:el comando "ip address" se usa para protocolo de direcciones, agregando el argumento "add <ip>"
+	se asigna los ip al dispositivo eth0 con los argumento "dev <device>"
+
+6- [pc1/pc2]
+   # ip address show
+
+   nota:"ip address" es el comando para protocolo de direccion del dispositivo, con el argumento "show"
+	se listas los distivos de red y sus direcciones, en este caso se visualizan las direccion es ip
+	asigandas en cada dispositivo
+
+7- [pc1]
+   # ping 192.168.1.2
+
+   [pc2]
+   # ping 192.168.1.1
+
+   nota:"ping" es una comando que envia un mensaje a la direccion ingresada como parametro (ip en este caso)
+	y muestra los tiempo de respuesta  
+
+8- [pc1]
+   # ping -c 20 192.168.1.2
+   PING 192.168.1.2 (192.168.1.2) 56(84) bytes of data.
+   64 bytes from 192.168.1.2: icmp_seq=1 ttl=64 time=0.212 ms
+   64 bytes from 192.168.1.2: icmp_seq=2 ttl=64 time=0.371 ms
+   64 bytes from 192.168.1.2: icmp_seq=3 ttl=64 time=0.381 ms
+   64 bytes from 192.168.1.2: icmp_seq=4 ttl=64 time=0.389 ms
+   64 bytes from 192.168.1.2: icmp_seq=5 ttl=64 time=0.282 ms
+   64 bytes from 192.168.1.2: icmp_seq=6 ttl=64 time=0.296 ms
+   64 bytes from 192.168.1.2: icmp_seq=7 ttl=64 time=0.360 ms
+   64 bytes from 192.168.1.2: icmp_seq=8 ttl=64 time=0.352 ms
+   64 bytes from 192.168.1.2: icmp_seq=9 ttl=64 time=0.343 ms
+   64 bytes from 192.168.1.2: icmp_seq=10 ttl=64 time=0.362 ms
+   64 bytes from 192.168.1.2: icmp_seq=11 ttl=64 time=0.354 ms
+   64 bytes from 192.168.1.2: icmp_seq=12 ttl=64 time=0.344 ms
+   64 bytes from 192.168.1.2: icmp_seq=13 ttl=64 time=0.348 ms
+   64 bytes from 192.168.1.2: icmp_seq=14 ttl=64 time=0.359 ms
+   64 bytes from 192.168.1.2: icmp_seq=15 ttl=64 time=0.441 ms
+   64 bytes from 192.168.1.2: icmp_seq=16 ttl=64 time=0.394 ms
+   64 bytes from 192.168.1.2: icmp_seq=17 ttl=64 time=0.354 ms
+   64 bytes from 192.168.1.2: icmp_seq=18 ttl=64 time=0.350 ms
+   64 bytes from 192.168.1.2: icmp_seq=19 ttl=64 time=0.361 ms
+   64 bytes from 192.168.1.2: icmp_seq=20 ttl=64 time=0.542 ms
+
+   --- 192.168.1.2 ping statistics ---
+   20 packets transmitted, 20 received, 0% packet loss, time 19023ms
+   rtt min/avg/max/mdev = 0.212/0.359/0.542/0.065 ms
+
+   [pc2]
+   # ping -c 20 192.168.1.1
+   PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.
+   64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=7.73 ms
+   64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=0.357 ms
+   64 bytes from 192.168.1.1: icmp_seq=3 ttl=64 time=0.332 ms
+   64 bytes from 192.168.1.1: icmp_seq=4 ttl=64 time=0.344 ms
+   64 bytes from 192.168.1.1: icmp_seq=5 ttl=64 time=0.346 ms
+   64 bytes from 192.168.1.1: icmp_seq=6 ttl=64 time=0.301 ms
+   64 bytes from 192.168.1.1: icmp_seq=7 ttl=64 time=0.341 ms
+   64 bytes from 192.168.1.1: icmp_seq=8 ttl=64 time=0.354 ms
+   64 bytes from 192.168.1.1: icmp_seq=9 ttl=64 time=0.338 ms
+   64 bytes from 192.168.1.1: icmp_seq=10 ttl=64 time=0.357 ms
+   64 bytes from 192.168.1.1: icmp_seq=11 ttl=64 time=0.342 ms
+   64 bytes from 192.168.1.1: icmp_seq=12 ttl=64 time=0.357 ms
+   64 bytes from 192.168.1.1: icmp_seq=13 ttl=64 time=0.340 ms
+   64 bytes from 192.168.1.1: icmp_seq=14 ttl=64 time=0.363 ms
+   64 bytes from 192.168.1.1: icmp_seq=15 ttl=64 time=0.348 ms
+   64 bytes from 192.168.1.1: icmp_seq=16 ttl=64 time=0.361 ms
+   64 bytes from 192.168.1.1: icmp_seq=17 ttl=64 time=0.348 ms
+   64 bytes from 192.168.1.1: icmp_seq=18 ttl=64 time=0.363 ms
+   64 bytes from 192.168.1.1: icmp_seq=19 ttl=64 time=0.347 ms
+   64 bytes from 192.168.1.1: icmp_seq=20 ttl=64 time=0.585 ms
+
+   --- 192.168.1.1 ping statistics ---
+   20 packets transmitted, 20 received, 0% packet loss, time 19011ms
+   rtt min/avg/max/mdev = 0.301/0.728/7.737/1.608 ms
+
+   nota: el parametro "-c" permite ingresar la cantidad de envio de mensajes deseados, en este caso 20
+	el rtt es el tiempo round-trip time (ida y vuelta) como se ven al final de cada ejecucion
+
+9- El comando "vdump" se conecta al dominio de colision ingresado como parametro y captura los paquetes
+	transmitidos. Luego envia la informacion capturada y la muestra por salida estandar (terminal).
+	En este caso, los paquetes capturadosson redireccionados a Wireshark, el cual analiza el trafic0
+	de la red y muestra esos datos con una interfaz mas amigable.
+
+10- El comando ping trabaja unicamente sobre el protocolo ICMP, aunque internamente
+	la capa fisica envia un mensaje (con el protocolo ARP) a todas las maquinas preguntando 
+	por la direccion ip ingresada por parametro (ping [ip]). La maquina con direccion fisica 
+	[ip] responde (ARP) univocamente a la maquina que ejecuto el comando ping. Una vez identificada
+	la maquina requerida, el comando ping procede a enviar un "ICMP echo request" y la 
+	maquina con direccion logica "ICMP echo reply".
+
+11- En el Host, se ejecuto el comando "vconfig --eth1=DCa [guest]" para poder agregar una placa de red 
+	adicional a cada equipo (guest). En este caso, como ejemplo agregamos con el comando 
+	"vconfig --eth1=DCa pc1" una interface a pc1. Luego configuramos esa interface con el comando
+	"ifconfig eth1 192.168.1.3 up" (desde el guest pc1) el cual asigna el ip a la interface y la setea
+	activa.
+	

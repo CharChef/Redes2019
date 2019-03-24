@@ -1,0 +1,2 @@
+ip link set eth0 up
+ip a a 192.168.1.2/24 dev eth0

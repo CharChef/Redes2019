@@ -1,0 +1,7 @@
+ip link set eth0 up
+ip link set eth1 up
+
+ip a a 172.31.6.2/24 dev eth0
+ip a a 172.31.5.2/24 dev eth1
+
+ip route add defalut via 172.31.5.3 dev eth1 

@@ -1,0 +1,11 @@
+ip link set eth0 up
+ip link set eth1 up
+ip link set eth2 up
+
+ip a a 172.31.2.3/24 dev eth0
+ip a a 172.31.3.3/24 dev eth1
+ip a a 172.31.5.3/24 dev eth2
+
+ip route add 172.31.1.0/24 via 172.31.2.1 dev eth0
+ip route add 172.31.4.0/24 via 172.31.3.4 dev eth1
+ip route add 172.31.6.0/24 via 172.31.5.2 dev eth2

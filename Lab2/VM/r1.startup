@@ -1,0 +1,7 @@
+ip link set eth0 up
+ip link set eth1 up
+
+ip a a 172.31.1.1/24 dev eth0
+ip a a 172.31.2.1/24 dev eth1
+
+ip route add default via 172.31.2.3 dev eth1

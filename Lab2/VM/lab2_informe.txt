@@ -1,0 +1,246 @@
+Informe Laboratorio 2 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+1.a-IP: 172.30.1.33/16
+	Dirección de red: 172.30.0.0/16
+	Dirección IP del primer equipo de la subred: 172.30.0.1/16
+	Dirección IP del último equipo de la subred: 172.30.255.254/16
+	Dirección del Broadcast: 172.30.255.255/16
+	Cantidad de bit de host: 16 bits
+	Cantidad de equipos de la subred: 65534 host
+	
+1.b-IP: 172.30.1.33/255.255.255.252
+	Dirección de red: 172.30.1.32/30
+	Dirección IP del primer equipo de la subred: 172.30.1.33/30
+	Dirección IP del último equipo de la subred: 172.30.1.34/30
+	Dirección del Broadcast: 172.30.1.35/30
+	Cantidad de bit de host: 2 bits
+	Cantidad de equipos de la subred: 2 host
+
+1.c-IP: 192.168.10.234/24
+	Dirección de red: 192.168.10.0/24
+	Dirección IP del primer equipo de la subred: 192.168.10.1/24
+	Dirección IP del último equipo de la subred: 192.168.10.254/24
+	Dirección del Broadcast: 192.168.10.255/24
+	Cantidad de bit de host: 8 bits
+	Cantidad de equipos de la subred: 254 host
+
+1.d-IP: 172.17.99.71/16
+	Dirección de red: 172.17.0.0/16
+	Dirección IP del primer equipo de la subred: 172.17.0.1/16
+	Dirección IP del último equipo de la subred: 172.17.255.254/16
+	Dirección del Broadcast: 172.17.255.255/16
+	Cantidad de bit de host: 16 bits
+	Cantidad de equipos de la subred: 65534 host
+
+1.e-IP: 192.168.4.193/255.255.255.128
+	Dirección de red: 192.168.4.128/25
+	Dirección IP del primer equipo de la subred: 192.168.4.129/25
+	Dirección IP del último equipo de la subred: 192.168.4.254/25
+	Dirección del Broadcast: 192.168.4.255/25
+	Cantidad de bit de host: 7 bits
+	Cantidad de equipos de la subred: 126 host
+
+1.f-IP: 10.30.10.6/255.255.255.192
+	Dirección de red: 10.30.10.0/26
+	Dirección IP del primer equipo de la subred: 10.30.10.1/26
+	Dirección IP del último equipo de la subred: 10.30.10.62/26
+	Dirección del Broadcast: 10.30.10.63/26
+	Cantidad de bit de host: 6 bits
+	Cantidad de equipos de la subred: 62 host
+
+1.g-IP: 10.100.0.130/255.255.255.252
+	Dirección de red: 10.100.0.128/30
+	Dirección IP del primer equipo de la subred: 10.100.0.129/30
+	Dirección IP del último equipo de la subred: 10.100.0.130/30
+	Dirección del Broadcast: 10.100.0.131/30
+	Cantidad de bit de host: 2 bits
+	Cantidad de equipos de la subred: 2 host
+
+2- 	Como decisión de diseño todos los routers tienen en sus interfaces los ip del tipo: 
+	172.31.<red>.X	; con X el número del router.
+
+	Router R1:
+	eth0: 172.31.1.1
+	eth1: 172.31.2.1
+
+	Router R2:
+	eth0: 172.31.6.2
+	eth1: 172.31.5.2
+
+	Router R3:
+	eth0: 172.31.2.3
+	eth1: 172.31.3.3
+	eth2: 172.31.5.3
+
+	Router R4:
+	eth0: 172.31.4.4
+	eth1: 172.31.3.4
+	
+	Direcciones de Broadcast:
+	Red 1: 172.31.1.255/24										Red 2: 172.31.2.255/24
+	Red 3: 172.31.3.255/24										Red 4: 172.31.4.255/24
+	Red 5: 172.31.5.255/24										Red 6: 172.31.6.255/24
+	
+3- 	La configuración de las interfaces de los routers se encuetra en los archivos de configuración .startup.
+
+4- 	Como decisión de diseño todos los equipos workstation tienen en sus interfaces los ip del tipo: 172.31.<red>.1
+	Direcciones de PCs:
+
+	Workstation 1
+	pc1: 172.31.1.1
+	
+	Workstation 2
+	pc2: 172.31.4.1
+	
+	Workstation 3
+	pc3: 172.31.6.1
+	
+5-	Utilizando el comando ping se verificó la conectividad punto a punto (desde una pc hacia todas las demás).
+
+6-	La configuración de ruteo de los routers se encuetra en los archivos de configuración .startup.
+	
+	traceroute: Muestra los routers que son atravesados hasta alcanzar una dirección determinada desde el host en el que
+	se ejecuta el comando.
+	
+	tracepath: Rastrea el camino desde el host en donde es ejecutado el comando hasta el destino (ingresado por parametro) 
+	descubriendo el MTU (Maximum Transmission Unit) a lo largo del camino. Similar a traceroute pero más básico.
+	[-n]: Solo imprime las direcciones IP en forma de números (no hace la conversión para conseguir el nombre de host).
+	
+	Verificación:
+	[pc1]	// pc1	=>	pc2
+	# traceroute -n 172.31.4.102
+	1  172.31.1.1  9 ms  0 ms  0 ms
+	2  172.31.2.3  7 ms  0 ms  0 ms
+	3  172.31.3.4  2 ms  0 ms  0 ms
+	4  172.31.4.102  11 ms  0 ms  0 ms
+
+	[pc1]	// pc1	=>	pc3
+	# traceroute -n 172.31.6.103
+	1  172.31.1.1  0 ms  0 ms  0 ms
+	2  172.31.2.3  0 ms  0 ms  0 ms
+	3  172.31.5.2  7 ms  0 ms  0 ms
+	4  172.31.6.103  10 ms  0 ms  0 ms
+
+	[pc2]	// pc2	=>	pc3
+	# traceroute -n 172.31.6.103
+	1  172.31.4.4  1 ms  0 ms  0 ms
+	2  172.31.3.3  0 ms  0 ms  0 ms
+	3  172.31.5.2  1 ms  0 ms  0 ms
+	4  172.31.6.103  1 ms  1 ms  1 ms
+	
+	[pc3]	// pc3	=>	pc1
+	# tracepath -n 172.31.1.101
+	1:  172.31.6.103      0.207ms pmtu 1500
+	1:  172.31.6.2        0.314ms 
+	1:  172.31.6.2        0.227ms 
+	2:  172.31.5.3        0.490ms 
+	3:  172.31.2.1        0.659ms 
+	4:  172.31.1.101      0.744ms reached
+    Resume: pmtu 1500 hops 4 back 61
+	
+	[pc3]	// pc3	=>	pc2
+	# tracepath -n 172.31.4.102
+	1:  172.31.6.103      0.416ms pmtu 1500
+	1:  172.31.6.2        0.620ms 
+	1:  172.31.6.2        0.451ms 
+	2:  172.31.5.3        0.835ms 
+	3:  172.31.3.4        1.024ms 
+	4:  172.31.4.102     10.821ms reached
+    Resume: pmtu 1500 hops 4 back 61
+	
+	[pc2]	// pc2	=>	pc1
+	# tracepath -n 172.31.1.101
+	1:  172.31.4.102      0.295ms pmtu 1500
+	1:  172.31.4.4        0.456ms 
+	1:  172.31.4.4        0.624ms 
+	2:  172.31.3.3        0.739ms 
+	3:  172.31.2.1        0.933ms 
+	4:  172.31.1.101      1.149ms reached
+    Resume: pmtu 1500 hops 4 back 61 
+
+7- [r1]
+	# tcpdump arp -e -i eth1
+	
+	Nota: Se le agrega el parámetro "-i eth1" para capturar solo el tráfico de la interface eth1
+	la cual corresponde a la interface de la red 2.
+	
+8.a-Si, se generó tráfico.
+
+8.b-Se dirige hacia la dirección MAC de Broadcast.
+	Respuesta consola:
+	17:33:53.013063 ee:97:f2:ab:47:0c (oui Unknown) > Broadcast,
+		ethertype ARP (0x0806), length 42: arp who-has 172.31.2.1 tell 172.31.2.3
+
+8.c-El router R1 es le que responde la consulta.
+	Respuesta consola:
+	17:33:53.016726 fa:de:dc:30:96:57 (oui Unknown) > ee:97:f2:ab:47:0c (oui Unknown),
+		ethertype ARP (0x0806), length 42: arp reply 172.31.2.1 is-at fa:de:dc:30:96:57 (oui Unknown)
+
+8.d-El dato es el mensaje: arp who-has 172.31.2.3 tell 172.31.2.1.
+	Respuesta consola:
+	17:33:58.013149 fa:de:dc:30:96:57 (oui Unknown) > ee:97:f2:ab:47:0c (oui Unknown),
+		ethertype ARP (0x0806), length 42: arp who-has 172.31.2.3 tell 172.31.2.1
+	17:33:58.013661 ee:97:f2:ab:47:0c (oui Unknown) > fa:de:dc:30:96:57 (oui Unknown),
+		ethertype ARP (0x0806), length 42: arp reply 172.31.2.3 is-at ee:97:f2:ab:47:0c (oui Unknown)
+
+9-	[r4]	//Se hace ping desde r4 a pc1.
+	# ping 172.31.1.101
+	
+	[r1]	//Se escucha en r1 con tcpdump -e -i eth1.
+	# tcpdump arp -e -i eth1
+	
+	
+	[pc1]	//Se escucha en pc1 con tcpdump -e.
+	#tcpdump arp -e
+	
+9.a-Si, se generó tráfico ARP.
+
+9.b-En r1 el destino del who-has es la dirección MAC de r3 y la dirección MAC de r1.
+	Respuesta consola:
+	17:43:54.101017 ee:97:f2:ab:47:0c (oui Unknown) > fa:de:dc:30:96:57 (oui Unknown), 
+		ethertype ARP (0x0806), length 42: arp who-has 172.31.2.1 tell 172.31.2.3
+	
+	En pc1 el destino del who-has es la dirección MAC de r1 y la dirección MAC de pc1.
+	Respuesta consola:
+	17:43:17.484961 0e:ab:f8:0c:10:4b (oui Unknown) > 6e:5f:98:37:0c:07 (oui Unknown), 
+		ethertype ARP (0x0806), length 42: arp who-has 172.31.1.101 tell 172.31.1.1
+
+9.c-En r1 el destino del reply es la dirección MAC de r1 y la dirección MAC de r3.
+	Respuesta consola:
+	17:43:54.109853 fa:de:dc:30:96:57 (oui Unknown) > ee:97:f2:ab:47:0c (oui Unknown),
+		ethertype ARP (0x0806), length 42: arp reply 172.31.2.1 is-at fa:de:dc:30:96:57 (oui Unknown)
+	
+	En pc1 el destino del reply es la direccion MAC de pc1 y la dirección MAC de r1.
+	Respuesta consola:
+	17:43:17.493384 6e:5f:98:37:0c:07 (oui Unknown) > 0e:ab:f8:0c:10:4b (oui Unknown),
+		ethertype ARP (0x0806), length 42: arp reply 172.31.1.101 is-at 6e:5f:98:37:0c:07 (oui Unknown)
+
+9.d-El comando "ip neigh flush all" borra las entradas de las tablas ARP.
+
+	MAC r1[0]: fa:de:dc:30:96:57
+	MAC r3[0]: ee:97:f2:ab:47:0c
+	MAC pc1[0]: 6e:5f:98:37:0c:07
+
+10- [r4]
+	# ip neigh show
+	172.31.3.3 dev eth1 lladdr d2:90:43:d2:95:19 STALE
+	172.31.4.102 dev eth0 lladdr 2e:18:cc:d4:8c:e7 REACHABLE
+	
+	Estados nud:
+	permanent:	La entrada del vecino es válida siempre y solo puede ser borrada administrativamente.
+	noarp:	La entrada del vecino es válida. No serán realizados intentos por validar esta entrada 
+			pero puede ser borrada cuando su tiempo de vida expire.
+	reachable:	La entrada del vecino es válida hasta que el tiempo alcanzabilidad expire.
+	stale:	La entrada del vecino es válida pero sospechosa.
+	none:	Este es un pseudo estado usado cuando se crea una entrada de vecino inicialmente o 
+			después de intentar borrarla antes de que sea liberada para hacerlo.
+	incomplete:	La entrada del vecino no ha sido (todavía) validad/resuelta.
+	delay: 	La validación de la entrada del vecino esta actualmente demorada.
+	probe:	El vecino esta siendo rastreado.
+	failed: Máximo número de rastreos excedido sin éxito, la validación del vecino ha fallado finalmente.

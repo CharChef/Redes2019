@@ -1,0 +1,18 @@
+brctl addbr sw0
+brctl addif sw0 eth0
+brctl addif sw0 eth1
+brctl addif sw0 eth2
+
+ifconfig eth0 0.0.0.0 up
+ifconfig eth1 0.0.0.0 up
+ifconfig eth2 0.0.0.0 up
+
+echo "1" > /proc/sys/net/ipv4/conf/eth0/proxy_arp
+echo "1" > /proc/sys/net/ipv4/conf/eth1/proxy_arp
+echo "1" > /proc/sys/net/ipv4/conf/eth2/proxy_arp
+
+echo "1" > /proc/sys/net/ipv4/conf/eth0/forwarding
+echo "1" > /proc/sys/net/ipv4/conf/eth1/forwarding
+echo "1" > /proc/sys/net/ipv4/conf/eth1/forwarding
+
+ifconfig sw0 up

@@ -1,0 +1,206 @@
+Informe Laboratorio 3 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+2.	Redes Utilizadas
+
+	Red 1
+	Dirección de red: 172.16.138.0/25
+	Dirección del Broadcast: 172.16.138.127/25
+	Rango de direccionamiento: [172.16.138.1/25 - 172.16.138.126/25]
+	Cantidad de equipos necesarios: 100 host
+	Cantidad de equipos de la subred: 126 host
+	
+	Red 2
+	Dirección de red: 172.16.138.128/25
+	Dirección del Broadcast: 172.16.138.255/25
+	Rango de direccionamiento: [172.16.138.129/25 - 172.16.138.254/25]
+	Cantidad de equipos necesarios: 96 host
+	Cantidad de equipos de la subred: 126 host
+
+	Red 3
+	Dirección de red: 172.16.139.64/27
+	Dirección del Broadcast: 172.16.139.95/27
+	Rango de direccionamiento: [172.16.139.65/27 - 172.16.139.94/27]
+	Cantidad de equipos necesarios: 29 host
+	Cantidad de equipos de la subred: 30 host	
+
+	Red 4
+	Dirección de red: 172.16.139.0/26
+	Dirección del Broadcast: 172.16.139.63/26
+	Rango de direccionamiento: [172.16.139.1/26 - 172.16.139.62/26]
+	Cantidad de equipos necesarios: 50 host
+	Cantidad de equipos de la subred: 62 host
+
+	Red 5
+	Dirección de red: 172.16.139.96/30
+	Dirección del Broadcast: 172.16.139.99/30
+	Rango de direccionamiento: [172.16.139.97/30 - 172.16.139.98/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+
+	Red 6
+	Dirección de red: 172.16.139.100/30
+	Dirección del Broadcast: 172.16.139.103/30
+	Rango de direccionamiento: [172.16.139.101/30 - 172.16.139.102/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+
+	Red 7
+	Dirección de red: 172.16.140.0/23
+	Dirección del Broadcast: 172.16.141.255/23
+	Rango de direccionamiento: [172.16.140.1/23 - 172.16.141.254/23]
+	Cantidad de equipos necesarios: 509 host
+	Cantidad de equipos de la subred: 510 host
+	
+	Red 8
+	Dirección de red: 172.16.142.0/23
+	Dirección del Broadcast: 172.16.143.255/23
+	Rango de direccionamiento: [172.16.142.1/23 - 172.16.143.254/23]
+	Cantidad de equipos necesarios: 360 host
+	Cantidad de equipos de la subred: 510 host
+
+	Redes sobrantes
+	
+	- 172.16.139.128/26 (62 host)
+	- 172.16.139.192/26 (62 host)
+	- 172.16.139.104/30 (Punto a punto)
+	- 172.16.139.108/30 (Punto a punto)
+	- 172.16.139.112/30 (Punto a punto)
+	- 172.16.139.116/30 (Punto a punto)
+	- 172.16.139.120/30 (Punto a punto)
+	- 172.16.139.124/30 (Punto a punto)
+	
+3. 	Como decisión de diseño todos los routers tienen en sus interfaces los primeros ip del
+	rango de la red (de Izquierda a Derecha).
+
+	Router R1:
+	eth0: 172.16.138.1/25
+	eth1: 172.16.138.129/25
+	eth2: 172.16.139.65/27
+	eth3: 172.16.139.101/30
+
+	Router R2:
+	eth0: 172.16.139.1/26
+	eth1: 172.16.139.66/27
+	eth2: 172.16.139.97/30
+
+	Router R3:
+	eth0: 172.16.139.98/30
+	eth1: 172.31.0.1 (asignada por la cátedra)
+
+	Router R4:
+	eth0: 172.16.140.1/23
+	eth1: 172.16.142.1/23
+	eth3: 172.16.139.102/30
+		
+	La configuración de las interfaces de los routers se encuetra en los archivos de configuración .startup.
+
+4. 	Utilizando el comando ping se verificó la conectividad punto a punto entre los routers de la topología.
+
+5.	La configuración de ruteo de los routers se encuetra en los archivos de configuración .startup como se
+	muestra a continuación:
+	
+	[r1.startup]
+	ip route add 172.16.140.0/22 via 172.16.139.102
+	ip route add default via 172.16.139.66
+	
+	[r2.startup]
+	ip route add 172.16.138.0/24 via 172.16.139.65
+	ip route add 172.16.140.0/22 via 172.16.139.65
+	ip route add 172.16.139.100/30 via 172.16.139.65
+	ip route add default via 172.16.139.98
+	
+	[r3.startup]
+	ip route add 172.16.138.0/24 via 172.16.139.97
+	ip route add 172.16.140.0/22 via 172.16.139.97		<---------------------------------------------------------- ??
+	ip route add 172.16.139.100/30 via 172.16.139.97
+	ip route add 172.16.139.64/27 via 172.16.139.97
+	ip route add 172.16.139.0/26 via 172.16.139.97
+	ip route add default via 172.31.0.254
+	
+	ip route add default via 172.31.0.253 table 2
+	ip rule add from 172.16.142.0/23 table 2
+	
+	[r4.startup]
+	ip route add default via 172.16.139.101
+	
+	[pc1.startup]
+	ip route add default via 172.16.142.1
+	
+	Luego, se configuraron las tablas de ruteo de los dispositivos risps y rcarrier para
+	direccionar el regreso de los paquetes correctamente:
+	
+	[risp1.startup]
+	ip route add 172.16.138.0/24 via 172.31.0.1
+	ip route add 172.16.139.0/24 via 172.31.0.1
+	ip route add 172.16.140.0/24 via 172.31.0.1
+	ip route add 172.16.141.0/24 via 172.31.0.1
+	ip route add 172.16.142.0/24 via 172.31.0.1
+	ip route add 172.16.143.0/24 via 172.31.0.1
+	ip route add default via 172.17.0.2
+	
+	[risp2.startup]
+	ip route add 172.16.138.0/24 via 172.31.0.1
+	ip route add 172.16.139.0/24 via 172.31.0.1
+	ip route add 172.16.140.0/24 via 172.31.0.1
+	ip route add 172.16.141.0/24 via 172.31.0.1
+	ip route add 172.16.142.0/24 via 172.31.0.1
+	ip route add 172.16.143.0/24 via 172.31.0.1
+	ip route add default via 172.18.0.2
+	
+	[rcarrier.startup]
+	ip route add 172.16.138.0/24 via 172.17.0.1
+	ip route add 172.16.139.0/24 via 172.17.0.1
+	ip route add 172.16.140.0/24 via 172.17.0.1
+	ip route add 172.16.141.0/24 via 172.17.0.1
+	ip route add 172.16.142.0/24 via 172.17.0.1
+	ip route add 172.16.143.0/24 via 172.17.0.1
+
+	ip route add 172.16.142.0/23 via 172.18.0.1 table 2
+	ip rule add to 172.16.142.0/23 table 2 
+	
+	Nota: Para optimizar la cantidad de entradas en la tabla de enrutamiento, se usaron:
+	
+	- La ip 172.16.138.0/25 para referenciar a las redes 1 y 2.
+	- La ip 172.16.140.0/22 para referenciar a las redes 7 y 8.
+
+6.	Workstation pc1:
+
+	Dirección IP: 172.16.142.101
+	Máscara de subred: 23
+	Puerta de enlace: eth0
+	
+	[pc1.startup]
+	ip link set eth0 up
+	ip a a 172.16.142.101/23 dev eth0
+	
+7.	[pc1.startup]	
+	echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+
+8.	Para navegar en modo CLI (Command Line Interface) se utiliza el comando "links".
+	
+	[pc1]
+	# links www.google.com
+	
+	Verificación de tráfico:
+	
+	[r1]	r1 -> rcarrier (enlace a Red ISP2)
+	# traceroute -n 172.18.0.2
+	 1  172.16.139.66  1 ms  1 ms  0 ms
+	 2  172.16.139.98  1 ms  0 ms  0 ms
+	 3  172.31.0.254  8 ms  0 ms  0 ms	<-- ISP1
+	 4  172.18.0.2  9 ms  0 ms  0 ms
+	
+	[pc1]	pc1 -> rcarrier (enlace a Red ISP2)
+	# traceroute -n 172.18.0.2
+	 1  172.16.142.1  6 ms  0 ms  0 ms
+	 2  172.16.139.101  18 ms  0 ms  0 ms
+	 3  172.16.139.66  7 ms  0 ms  1 ms
+	 4  172.16.139.98  5 ms  1 ms  1 ms
+	 5  172.31.0.253  4 ms  1 ms  1 ms	<-- ISP2
+	 6  172.18.0.2  7 ms  1 ms  1 ms

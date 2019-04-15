@@ -136,30 +136,18 @@ Respuestas:
 	direccionar el regreso de los paquetes correctamente:
 	
 	[risp1.startup]
-	ip route add 172.16.138.0/24 via 172.31.0.1
-	ip route add 172.16.139.0/24 via 172.31.0.1
-	ip route add 172.16.140.0/24 via 172.31.0.1
-	ip route add 172.16.141.0/24 via 172.31.0.1
-	ip route add 172.16.142.0/24 via 172.31.0.1
-	ip route add 172.16.143.0/24 via 172.31.0.1
+	ip route add 172.16.138.0/23 via 172.31.0.1
+	ip route add 172.16.140.0/22 via 172.31.0.1
 	ip route add default via 172.17.0.2
 	
 	[risp2.startup]
-	ip route add 172.16.138.0/24 via 172.31.0.1
-	ip route add 172.16.139.0/24 via 172.31.0.1
-	ip route add 172.16.140.0/24 via 172.31.0.1
-	ip route add 172.16.141.0/24 via 172.31.0.1
-	ip route add 172.16.142.0/24 via 172.31.0.1
-	ip route add 172.16.143.0/24 via 172.31.0.1
+	ip route add 172.16.138.0/23 via 172.31.0.1
+	ip route add 172.16.140.0/22 via 172.31.0.1
 	ip route add default via 172.18.0.2
 	
 	[rcarrier.startup]
-	ip route add 172.16.138.0/24 via 172.17.0.1
-	ip route add 172.16.139.0/24 via 172.17.0.1
-	ip route add 172.16.140.0/24 via 172.17.0.1
-	ip route add 172.16.141.0/24 via 172.17.0.1
-	ip route add 172.16.142.0/24 via 172.17.0.1
-	ip route add 172.16.143.0/24 via 172.17.0.1
+	ip route add 172.16.138.0/23 via 172.17.0.1
+	ip route add 172.16.140.0/22 via 172.17.0.1
 
 	ip route add 172.16.142.0/23 via 172.18.0.1 table 2
 	ip rule add to 172.16.142.0/23 table 2 

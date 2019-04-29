@@ -1,0 +1,12 @@
+$TTL	60000
+
+150.168.192.in-addr.arpa.	IN	SOA	r4.redes.edu.ar. admin.r4.redes.edu.ar (
+								2019042901 ; serial
+								28 ; refresh
+								14 ; retry
+								3600000 ; expire
+								0 ; negative cache ttl
+								)
+;
+150.168.192.in-addr.arpa. IN NS r4.redes.edu.ar.
+1	IN	PTR	r1.redes.edu.ar.

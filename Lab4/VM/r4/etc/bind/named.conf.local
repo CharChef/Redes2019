@@ -1,0 +1,24 @@
+zone "redes.edu.ar" {
+        type master;
+        file "/etc/bind/zones/db.redes.edu.ar";
+};
+
+zone "148.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/bind/zones/db.148.168.192";
+};
+
+zone "150.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/bind/zones/db.150.168.192";
+};
+
+zone "151.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/bind/zones/db.151.168.192";
+};
+
+zone "152.168.192.in-addr.arpa" {
+        type master;
+        file "/etc/bind/zones/db.152.168.192";
+};

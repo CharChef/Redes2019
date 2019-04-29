@@ -1,0 +1,10 @@
+ip link set eth0 up
+ip link set eth1 up
+ip link set eth2 up
+
+ip a a 192.168.148.1/23 	dev eth0
+ip a a 192.168.150.1/24 	dev eth1
+ip a a 192.168.151.129/26 	dev eth2
+
+ip route add default via 192.168.151.130
+/etc/init.d/dhcp3-server start

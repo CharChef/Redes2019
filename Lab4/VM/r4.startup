@@ -1,0 +1,9 @@
+ip link set eth0 up
+ip link set eth1 up
+
+ip a a 192.168.151.193/26 	dev eth0
+ip a a 192.168.152.66/30	dev eth1
+
+ip route add default via 192.168.152.65
+
+/etc/init.d/bind start

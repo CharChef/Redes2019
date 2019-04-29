@@ -1,0 +1,8 @@
+ip link set eth0 up
+ip a a 172.31.0.254/24 dev eth0
+iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+#iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to-source 192.168.2.2
+
+ip route add 192.168.148.0/22  via 172.31.0.1
+ip route add 192.168.152.0/24  via 172.31.0.1
+

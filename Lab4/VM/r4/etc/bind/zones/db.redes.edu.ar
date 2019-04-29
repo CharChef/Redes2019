@@ -1,0 +1,24 @@
+$TTL	60000
+
+@		IN		SOA		r4.redes.edu.ar.	admin.r4.redes.edu.ar. (
+								2019042901 ; serial
+								28 ; refresh
+								14 ; retry
+								3600000 ; expire
+								0 ; negative cache ttl
+								)
+;								
+@	IN	NS 	r4.redes.edu.ar.
+r4	IN	A	192.168.151.193
+	IN	A	192.168.152.66
+r3	IN	A	192.168.152.70
+	IN	A	192.168.152.1
+	IN	A	172.31.0.1
+r2	IN	A	192.168.151.130
+	IN	A	192.168.151.1
+	IN	A	192.168.152.65
+	IN	A	192.168.152.69
+r1	IN	A	192.168.148.1
+	IN	A	192.168.150.1
+	IN	A	192.168.151.129
+pc1	IN	A	192.168.148.101

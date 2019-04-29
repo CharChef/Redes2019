@@ -1,0 +1,162 @@
+Informe Laboratorio 4 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+2.	Redes Utilizadas
+
+	Red 1
+	Dirección de red: 192.168.148.0/23
+	Dirección del Broadcast: 192.168.149.255/23
+	Rango de direccionamiento: [192.168.148.1/23 - 192.168.149.254/23]
+	Cantidad de equipos necesarios: 356 host
+	Cantidad de equipos de la subred: 510 host
+	
+	Red 2
+	Dirección de red: 192.168.150.0/24
+	Dirección del Broadcast: 192.168.150.255/24
+	Rango de direccionamiento: [192.168.150.1/24 - 192.168.150.254/24]
+	Cantidad de equipos necesarios: 230 host
+	Cantidad de equipos de la subred: 254 host
+
+	Red 3
+	Dirección de red: 192.168.151.128/26
+	Dirección del Broadcast: 192.168.151.191/26
+	Rango de direccionamiento: [192.168.151.127/26 - 192.168.151.190/26]
+	Cantidad de equipos necesarios: 61 host
+	Cantidad de equipos de la subred: 62 host	
+
+	Red 4
+	Dirección de red: 192.168.151.0/25
+	Dirección del Broadcast: 192.168.151.127/25
+	Rango de direccionamiento: [192.168.151.1/25 - 192.168.151.126/25]
+	Cantidad de equipos necesarios: 110 host
+	Cantidad de equipos de la subred: 126 host
+
+	Red 5
+	Dirección de red: 192.168.152.0/26
+	Dirección del Broadcast: 192.168.152.63/26
+	Rango de direccionamiento: [192.168.152.1/26 - 192.168.152.62/26]
+	Cantidad de equipos necesarios: 50 host
+	Cantidad de equipos de la subred: 62 host
+
+	Red 6
+	Dirección de red: 192.168.151.192/26
+	Dirección del Broadcast: 192.168.151.255/26
+	Rango de direccionamiento: [192.168.151.193/26 - 192.168.151.254/26]
+	Cantidad de equipos necesarios: 55 host
+	Cantidad de equipos de la subred: 62 host
+
+	Red 7
+	Dirección de red: 192.168.152.64/30
+	Dirección del Broadcast: 192.168.152.67/30
+	Rango de direccionamiento: [192.168.152.65/30 - 192.168.152.66/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+	
+	Red 8
+	Dirección de red: 192.168.152.68/30
+	Dirección del Broadcast: 192.168.152.71/30
+	Rango de direccionamiento: [192.168.152.69/30 - 192.168.152.70/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+
+	Redes sobrantes
+	
+	- 192.168.152.72/30  (punto a punto)
+	- 192.168.152.76/30  (punto a punto)
+	- 192.168.152.80/28  (14 host)
+	- 192.168.152.98/27  (30 host)
+	- 192.168.152.128/25 (126 host)
+	
+	
+3. 	Como decisión de diseño todos los routers tienen en sus interfaces los primeros ip del
+	rango de la red (de Izquierda a Derecha).
+
+	Workstation 1
+	Se define mas adelante en el punto 7
+
+	Router R1:
+	eth0: 192.168.148.1/23
+	eth1: 192.168.150.1/24
+	eth2: 192.168.151.159/26
+
+	Router R2:
+	eth0: 192.168.151.130/26
+	eth1: 192.168.151.1/25
+	eth2: 192.168.152.65/30
+	eth3: 192.168.152.69/30
+
+	Router R3:
+	eth0: 192.168.152.70/30
+	eth1: 192.168.152.1/26
+	eth2: 172.31.0.1 (asignada por la cátedra)
+
+	Router R4:
+	eth0: 192.168.151.193/26
+	eth1: 192.168.152.66/30
+		
+	La configuración de las interfaces de los routers se encuetra en los archivos de configuración .startup.
+
+4.	La configuración de ruteo de los routers se encuetra en los archivos de configuración .startup como se
+	muestra a continuación:
+	
+	[r1.startup]
+	ip route add default via 192.168.151.130
+	
+	[r2.startup]
+	ip route add 192.168.148.0/23 via 192.168.151.129
+	ip route add 192.168.150.0/24 via 192.168.151.129
+	ip route add 192.168.151.192/26 via 192.168.152.66
+	ip route add default via 192.168.152.70
+	
+	[r3.startup]
+	ip route add 192.168.148.0/22  via 192.168.152.69
+	ip route add 192.168.152.64/30 via 192.168.152.69
+	ip route add default via 172.31.0.254
+	
+	[r4.startup]
+	ip route add default via 192.168.152.65
+	
+	Luego, se configuraron las tablas de ruteo de los dispositivos risps y rcarrier para
+	direccionar el regreso de los paquetes correctamente:
+	
+	[risp.startup]
+	ip route add 192.168.148.0/22  via 172.31.0.1
+	ip route add 192.168.152.0/24  via 172.31.0.1
+	
+	[lab.conf]
+	risp[1]=tap,10.0.0.1,10.0.0.2 
+	
+	Nota: Para optimizar la cantidad de entradas en la tabla de enrutamiento, se usó:
+	
+	- La ip 192.168.148.0/22 para referenciar a las redes 1,2,3,4 y 6.
+
+5.	Router4 como servidor DNS:
+
+	- Para responder las consultas, las configuraciones del servidor DNS se encuentran en el
+	  directorio /etc dentro de r4.
+	- Para inicializar el servicio, se modificaron las configuraciones estaticas de r4 (r4.startup)
+	- Las consultas recursivas se activan con la opcion allow-recursion en el archivo named.conf.options
+	- Los archivos de zonas se encuentran en el directorio /etc/bind/zones dentro de r4
+
+6.	Se configuraron los router como clientes DNS de r4 agregando a cada router el archivo resolv.conf
+	dentro de directorio etc, dicho archivo contiene "nameserver 192.168.151.193" que apunta al ip
+	del servidor DNS primario.
+
+7.	Router1 como servidor DHCP
+	
+	-Las configuraciones de router1 para que funcione como servidor DHCP se encuentran en el archivo
+	 dhcpd.conf ubicado en el directorio /etc/dhcp3.
+	-para que el servidor DHCP atienda requerimientos solo de la "red 1" se modifco el archivo
+	 dhcp3-server que contiene la linea INTERFACES="eth0".
+	-A la inversa de los router donde se setean en sus interfaces las ip correspondiente a la red
+	 de manera estatica, pc1 recibe por parte de r1 una ip que en este caso es preestablecida, la
+	 cual es 192.168.148.101/23, esto ser verifica desde pc1 con el comando "ip address show".
+	-el comando "dig r3.redes.edu.ar" se ultizo para una consulta directa la cual devuelve todas
+	 las interfaces pertenecientes a r3, mientras que el comando "dig -x 192.168.152.1" se utilizo
+	 para realizar una consulta inversa.
+

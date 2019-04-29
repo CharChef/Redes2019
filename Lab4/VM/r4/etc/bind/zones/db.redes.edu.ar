@@ -1,6 +1,6 @@
 $TTL	60000
 
-@		IN		SOA		r4.redes.edu.ar.	admin.r4.redes.edu.ar. (
+@		IN		SOA		r4.redes.edu.ar.	admin.r4.redes.edu.ar (
 								2019042901 ; serial
 								28 ; refresh
 								14 ; retry

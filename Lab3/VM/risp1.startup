@@ -4,10 +4,6 @@ ip link set eth1 up
 ip a a 172.31.0.254/24 dev eth0
 ip a a 172.17.0.1/30 dev eth1
 
-ip route add 172.16.138.0/24 via 172.31.0.1
-ip route add 172.16.139.0/24 via 172.31.0.1
-ip route add 172.16.140.0/24 via 172.31.0.1
-ip route add 172.16.141.0/24 via 172.31.0.1
-ip route add 172.16.142.0/24 via 172.31.0.1
-ip route add 172.16.143.0/24 via 172.31.0.1
+ip route add 172.16.138.0/23 via 172.31.0.1
+ip route add 172.16.140.0/22 via 172.31.0.1
 ip route add default via 172.17.0.2

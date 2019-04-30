@@ -1,6 +1,6 @@
 $TTL	60000
 
-152.168.192.in-addr.arpa.		IN		SOA		r4.redes.edu.ar.	admin.r4.redes.edu.ar (
+152.168.192.in-addr.arpa.		IN		SOA		rdns.redes.edu.ar.	admin.redes.edu.ar (
 								2019042901 ; serial
 								28 ; refresh
 								14 ; retry
@@ -8,9 +8,9 @@ $TTL	60000
 								0 ; negative cache ttl
 								)
 ;
-152.168.192.in-addr.arpa. IN NS r4.redes.edu.ar.
-1	IN	PTR	r3.redes.edu.ar.
-65	IN	PTR	r2.redes.edu.ar.
-66	IN	PTR	r4.redes.edu.ar.
-69	IN	PTR	r2.redes.edu.ar.
-70	IN	PTR	r3.redes.edu.ar.
+152.168.192.in-addr.arpa.	IN 	NS 		rdns.redes.edu.ar.
+1							IN	PTR		r3-red5.redes.edu.ar.
+65							IN	PTR		r2-red7.redes.edu.ar.
+66							IN	PTR		r4-red7.redes.edu.ar.
+69							IN	PTR		r2-red8.redes.edu.ar.
+70							IN	PTR		r3-red8.redes.edu.ar.

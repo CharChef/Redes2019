@@ -108,15 +108,23 @@ Respuestas:
 		
 5.	La configuración de las interfaces de los routers se encuetra en los
 	archivos de configuración /etc/zebra/zebra.conf dentro del
-	directorio de cada router
+	directorio de cada router, dichos archivos se geneneraron usando la
+	la herramienta zebraen cada terminal accediendo con el comando
+	"telnet localhost zebra", luego con "enable" se activo el modo root,
+	posterior con el comando "config terminal", y para con figurar las
+	interfaces "interface eth0". Una vez finalizada se ejecuta "write"
+	para volcar las configuraciones en memoria a los archivos zebra.conf
+	antes mecionados.
 	Utilizando el comando "ip address show" en cada router se verifico
 	la existencia de las interfaces y que las mismas esten activas
 	
 6.	La configuración de las tablas de routeo se encuetra en los
 	archivos de configuración /etc/zebra/ripd.conf dentro del
-	directorio de los router r2, r3, r4 y risp. En cambio el enrutamiento
-	en r1 esta configurado directamente en el archivo zebra.conf ya que
-	es estatico
+	directorio de los router r2, r3, r4 y risp, los cualos fueron
+	generados con la herramienta rip en cada terminal accediendo
+	con el comando "telnet localhost ripd".
+	En cambio el enrutamiento en r1 esta configurado directamente en el
+	archivo zebra.conf ya que es estatico generado con zebra
 	
 7.	Se agrego la linea "risp[1]=tap,10.0.10.1,10.0.10.2" en el archivo
 	lab.conf del laboratorio
@@ -133,7 +141,8 @@ Respuestas:
 	a-	si se desconecta la red 6 el trafico deberia pasar por la red 7
 		y red 9
 	
-	b-	se desconeto la red 6 y se realizo un traceroute desde router r1
+	b-	se desconeto la red 6 utilizando "interface eth3" y luego
+		"shutdown"; se realizo un traceroute desde router r1
 		hasta rips y se verifico que el trafico efectivamente si dirige
 		por las redes 7 y 9
 		

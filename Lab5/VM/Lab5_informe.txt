@@ -1,0 +1,177 @@
+Informe Laboratorio 5 - Redes de Computadoras 2019
+
+Autores:
+- Loza Carlos (94399)
+- Agra Federico (94186)
+
+Respuestas:
+
+2.	Redes Utilizadas
+
+	Red 1
+	Dirección de red: 192.168.13.0/26
+	Dirección del Broadcast: 192.168.13.63/26
+	Rango de direccionamiento: [192.168.13.1/26 - 192.168.13.62/26]
+	Cantidad de equipos necesarios: 48 host
+	Cantidad de equipos de la subred: 62 host
+	
+	Red 2
+	Dirección de red: 192.168.13.128/27
+	Dirección del Broadcast: 192.168.13.159/27
+	Rango de direccionamiento: [192.168.13.129/27 - 192.168.13.158/27]
+	Cantidad de equipos necesarios: 15 host
+	Cantidad de equipos de la subred: 30 host
+
+	Red 3
+	Dirección de red: 192.168.10.0/23
+	Dirección del Broadcast: 192.168.11.255/23
+	Rango de direccionamiento: [192.168.10.1/23 - 192.168.11.254/23]
+	Cantidad de equipos necesarios: 335 host
+	Cantidad de equipos de la subred: 510 host	
+
+	Red 4
+	Dirección de red: 192.168.13.64/26
+	Dirección del Broadcast: 192.168.13.127/26
+	Rango de direccionamiento: [192.168.13.65/26 - 192.168.13.126/26]
+	Cantidad de equipos necesarios: 61 host
+	Cantidad de equipos de la subred: 62 host
+
+	Red 5
+	Dirección de red: 192.168.13.160/27
+	Dirección del Broadcast: 192.168.13.191/27
+	Rango de direccionamiento: [192.168.13.161/27 - 192.168.13.190/27]
+	Cantidad de equipos necesarios: 30 host
+	Cantidad de equipos de la subred: 30 host
+
+	Red 6
+	Dirección de red: 192.168.13.192/30
+	Dirección del Broadcast: 192.168.13.195/30
+	Rango de direccionamiento: [192.168.13.193/30 - 192.168.13.194/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+
+	Red 7
+	Dirección de red: 192.168.13.196/30
+	Dirección del Broadcast: 192.168.13.196/30
+	Rango de direccionamiento: [192.168.13.197/30 - 192.168.13.198/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+	
+	Red 8
+	Dirección de red: 192.168.12.0/24
+	Dirección del Broadcast: 192.168.12.255/24
+	Rango de direccionamiento: [192.168.12.1/24 - 192.168.12.254/24]
+	Cantidad de equipos necesarios: 128 host
+	Cantidad de equipos de la subred: 254 host
+	
+	Red 9
+	Dirección de red: 192.168.13.200/30
+	Dirección del Broadcast: 192.168.13.203/30
+	Rango de direccionamiento: [192.168.13.201/30 - 192.168.13.202/30]
+	Cantidad de equipos necesarios: 2 host
+	Cantidad de equipos de la subred: 2 host
+
+	Redes sobrantes
+	
+	- 192.168.13.204/30  (punto a punto)
+	- 192.168.13.208/28  (14 host)
+	- 192.168.13.224/27  (30 host)
+	
+3. 	Como decisión de diseño todos los routers tienen en sus interfaces
+	los primeros ip del rango de la red (de Izquierda a Derecha).
+	
+	Router R1:
+	eth0: 192.168.13.1/26
+	eth1: 192.168.13.129/27
+	eth2: 192.168.10.1/23
+
+	Router R2:
+	eth0: 192.168.10.2/23
+	eth1: 192.168.13.65/26
+	eth2: 192.168.13.161/27
+	eth3: 192.168.13.193/30
+	eth4: 192-168.13.197/30
+
+	Router R3:
+	eth0: 192.168.13.194/30
+	eth1: 192.168.13.201/30
+	eth2: 172.31.0.1/24 (asignada por la cátedra)
+
+	Router R4:
+	eth0: 192.168.13.198/30
+	eth1: 192.168.13.202/30
+	eth2: 192.168.12.1/24
+	
+	risp
+	eth0: 172.31.0.2/24 (asignada por la cátedra)
+	eth1: tap,10.0.10.1,10.0.10.2
+		
+5.	La configuración de las interfaces de los routers se encuetra en los
+	archivos de configuración /etc/zebra/zebra.conf dentro del
+	directorio de cada router
+	Utilizando el comando "ip address show" en cada router se verifico
+	la existencia de las interfaces y que las mismas esten activas
+	
+6.	La configuración de las tablas de routeo se encuetra en los
+	archivos de configuración /etc/zebra/ripd.conf dentro del
+	directorio de los router r2, r3, r4 y risp. En cambio el enrutamiento
+	en r1 esta configurado directamente en el archivo zebra.conf ya que
+	es estatico
+	
+7.	Se agrego la linea "risp[1]=tap,10.0.10.1,10.0.10.2" en el archivo
+	lab.conf del laboratorio
+	
+8.	Para verificar las tabla s de enrutamiento, el procidmiento que se
+	siguio fue:
+	
+	En los router que utilian rips se ingrezo a zebra mediante el
+	comando "telnet localhost zebra" y luego se ingreso el password
+	pre configurado. Para ver las tablas se ingreso el comnado
+	"show ip route"
+
+9.
+	a-	si se desconecta la red 6 el trafico deberia pasar por la red 7
+		y red 9
+	
+	b-	se desconeto la red 6 y se realizo un traceroute desde router r1
+		hasta rips y se verifico que el trafico efectivamente si dirige
+		por las redes 7 y 9
+		
+	c-	Luego de volver a conectar la red 6, se realizo un nuevo
+		traceroute se corroboro que el trafico pasa nuevamente por la
+		red 6
+
+10.	
+
+	Workstation pc1:
+	eth0: 192.168.13.10/26
+
+	Se establecio como servidor dns para pc1 el utilizado en nuestra red
+	local siendo 192.168.0.1 en el archivo resolv.conf en el directorio
+	"etc" de pc1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

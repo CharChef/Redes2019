@@ -1,0 +1,7 @@
+#ip link set eth0 up
+#ip a a 172.31.0.2/24 dev eth0
+iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+#iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to-source 192.168.0.1
+
+/etc/init.d/quagga start
+

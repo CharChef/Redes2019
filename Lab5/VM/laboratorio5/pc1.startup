@@ -1,0 +1,5 @@
+ip link set eth0 up
+
+ip address add 192.168.13.10/26 dev eth0
+
+ip route add default via 192.168.13.1

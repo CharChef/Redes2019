@@ -107,48 +107,61 @@ Respuestas:
 	eth1: tap,10.0.10.1,10.0.10.2
 		
 5.	La configuración de las interfaces de los routers se encuetra en los
-	archivos de configuración /etc/zebra/zebra.conf dentro del
-	directorio de cada router, dichos archivos se geneneraron usando la
-	la herramienta zebraen cada terminal accediendo con el comando
-	"telnet localhost zebra", luego con "enable" se activo el modo root,
-	posterior con el comando "config terminal", y para con figurar las
-	interfaces "interface eth0". Una vez finalizada se ejecuta "write"
-	para volcar las configuraciones en memoria a los archivos zebra.conf
+	archivos de configuración /etc/quagga/zebra.conf dentro del
+	directorio de cada router.
+	Dichos archivos se geneneraron a partir de la herramienta zebra en 
+	cada terminal, accediendo con el comando "telnet localhost zebra".
+	La configuracion de cada interface se realizo a travez de la 
+	terminal de configuracion de zebra (en modo "enable" o "root") 
+	mediante los siguientes comandos:
+		- interface ethX			! donde X es el numero de interface.
+		- ip address A.B.C.D/M 		! donde A.B.C.D es la direccion ip 
+									! de esa interface y M es la 
+									! mascara.
+	Una vez finalizado, se ejecuto el comando "write" para volcar 
+	las configuraciones en memoria a los archivos zebra.conf
 	antes mecionados.
 	Utilizando el comando "ip address show" en cada router se verifico
-	la existencia de las interfaces y que las mismas esten activas
+	la existencia de las interfaces y que las mismas esten activas.
 	
 6.	La configuración de las tablas de routeo se encuetra en los
-	archivos de configuración /etc/zebra/ripd.conf dentro del
-	directorio de los router r2, r3, r4 y risp, los cualos fueron
-	generados con la herramienta rip en cada terminal accediendo
+	archivos de configuracion /etc/zebra/ripd.conf dentro del
+	directorio de los router r2, r3, r4 y risp. Estos archivos fueron
+	generados mediante la herramienta rip en cada terminal, accediendo
 	con el comando "telnet localhost ripd".
+	La configuracion de cada ruta se realizo a travez de la 
+	terminal de configuracion de ripd (en modo "enable" o "root") 
+	mediante los siguientes comandos:
+		- router rip				
+		- network ethX A.B.C.D/M 	! donde X es el numero de interface.
+		- neighbor A.B.C.D 			! donde A.B.C.D es la direccion ip 
+									! del router vecino.
 	En cambio el enrutamiento en r1 esta configurado directamente en el
-	archivo zebra.conf ya que es estatico generado con zebra
+	archivo generado zebra.conf ya que es estatico.
 	
 7.	Se agrego la linea "risp[1]=tap,10.0.10.1,10.0.10.2" en el archivo
-	lab.conf del laboratorio
+	lab.conf del laboratorio.
 	
 8.	Para verificar las tabla s de enrutamiento, el procidmiento que se
 	siguio fue:
 	
-	En los router que utilian rips se ingrezo a zebra mediante el
-	comando "telnet localhost zebra" y luego se ingreso el password
-	pre configurado. Para ver las tablas se ingreso el comnado
-	"show ip route"
+	En los router que utilian rips, para ver las tablas se ingreso 
+	el comnado "show ip rip" desde la terminal de configuracion del 
+	servicio ripd (en modo "enable" o "root").
 
 9.
 	a-	si se desconecta la red 6 el trafico deberia pasar por la red 7
-		y red 9
+		y red 9.
 	
 	b-	se desconeto la red 6 utilizando "interface eth3" y luego
 		"shutdown"; se realizo un traceroute desde router r1
 		hasta rips y se verifico que el trafico efectivamente si dirige
-		por las redes 7 y 9
+		por las redes 7 y 9.
 		
-	c-	Luego de volver a conectar la red 6, se realizo un nuevo
-		traceroute se corroboro que el trafico pasa nuevamente por la
-		red 6
+	c-	Luego de volver a conectar la red 6 (con el comando 
+		"no shutdown" desde la terminal de configuracion del servicio
+		zebra), se realizo un nuevo	traceroute se corroboro que el 
+		trafico pasa nuevamente por la red 6.
 
 10.	
 
@@ -157,7 +170,7 @@ Respuestas:
 
 	Se establecio como servidor dns para pc1 el utilizado en nuestra red
 	local siendo 192.168.0.1 en el archivo resolv.conf en el directorio
-	"etc" de pc1
+	"etc" de pc1.
 
 
 

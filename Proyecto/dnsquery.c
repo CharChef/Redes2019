@@ -16,12 +16,13 @@ void ayuda()
 		printf("OPCION\t\t\tDESCRIPCION\n");
 		
 		printf("consulta\t\t\tEs la consulta que se desea resolver.\n");
-		printf(":puerto\t\t\tServidor DNS con el que se resolvera la consulta. Si no se determina se usa el servidor DNS por defecto.\n");
-		printf("-a\t\tExplora los puertos contenidos dentro de rango lp:hp (0<lp<hp<1024).\n");
-		printf("-mx\t\t\tMuestra esta ayuda.\n");
-		printf("-loc\t\t\tMuestra esta ayuda.\n");
-		printf("-r\t\t\tMuestra esta ayuda.\n");
-		printf("-t\t\t\tMuestra esta ayuda.\n");
+		printf("@servidor\t\t\tServidor DNS con el que se resolvera la consulta. Si no se determina se usa el servidor DNS por defecto.\n");
+		printf(":puerto\t\t\t.\n");
+		printf("-a\t\t\t.\n");
+		printf("-mx\t\t\t.\n");
+		printf("-loc\t\t\t.\n");
+		printf("-r\t\t\t.\n");
+		printf("-t\t\t\t.\n");
 		printf("-h\t\t\tMuestra esta ayuda.\n");
 }
 
@@ -38,7 +39,7 @@ void ayuda()
  */
 void main(int argc, char *argv[]) {                   
 	int help = 0;
-	//
+	
 	if(argc==1)
 	{
 		//un solo parametro (apuertos)

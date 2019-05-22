@@ -38,7 +38,7 @@ void ayuda()
  */
 void main(int argc, char *argv[]) {                   
 	int help = 0;
-	
+	//
 	if(argc==1)
 	{
 		//un solo parametro (apuertos)

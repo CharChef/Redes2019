@@ -23,7 +23,7 @@ int dns_server_count = 0;
 #define T_PTR 12 /* domain name pointer */
 #define T_MX 15 //Mail server
  
-//Function Prototypes
+//Function Prototypes 
 void ngethostbyname (unsigned char* , int);
 void ChangetoDnsNameFormat (unsigned char*,unsigned char*);
 unsigned char* ReadName (unsigned char*,unsigned char*,int*);

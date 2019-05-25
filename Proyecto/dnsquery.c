@@ -1,6 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int cantParametros;
+int _h = 0;
+int _a = 0;
+int _mx = 0;
+int _loc = 0;
+int _r = 0;
+int _t = 0;
+char* servidor=NULL;
+char* puerto=NULL;
+char* consulta=NULL;
+
+
+//printfafa(char* cadena, int entreros );
+
+
 /*
  * Procedimiento ayuda
  * 
@@ -12,18 +27,40 @@
  */
 void ayuda()
 {
-		printf("MODO DE USO: dnsquery consulta @servidor[:puerto] [-a | -mx | -loc] [-r | -t] [-h]\n");
-		printf("OPCION\t\t\tDESCRIPCION\n");
+		if(cantParametros <= 2){ //<-- lo q es igual a (_r+_a+_t+_loc+_mx==0) && (servidor==NULL && puerto==NULL && consulta==NULL)
+			printf("MODO DE USO: dnsquery consulta @servidor[:puerto] [-a | -mx | -loc] [-r | -t] [-h]\n");
+            printf("OPCION\t\t\tDESCRIPCION\n");
+
+            printf("consulta\t\t\tEs la consulta que se desea resolver.\n");
+            printf("@servidor\t\t\tServidor DNS con el que se resolvera la consulta. Si no se determina se usa el servidor DNS por defecto.\n");
+            printf(":puerto\t\t\t.\n");
+            printf("-a\t\t\t.\n");
+            printf("-mx\t\t\t.\n");
+            printf("-loc\t\t\t.\n");
+            printf("-r\t\t\t.\n");
+            printf("-t\t\t\t.\n");
+            printf("-h\t\t\tMuestra esta ayuda.\n");
+		}
+		else{ //este else podria no estar
+			if(consulta!=NULL)ayudaConsulta();
+			if(servidor!=NULL)ayudaServidor();
+			if(puerto!=NULL)ayudaPuerto();
+			if(_a)ayudaA();
+			if(_mx)ayudaMx();
+			if(_loc)ayudaLoc();
+			if(_r)ayudaR();
+			if(_t)ayudaT();
+		}
 		
-		printf("consulta\t\t\tEs la consulta que se desea resolver.\n");
-		printf("@servidor\t\t\tServidor DNS con el que se resolvera la consulta. Si no se determina se usa el servidor DNS por defecto.\n");
-		printf(":puerto\t\t\t.\n");
-		printf("-a\t\t\t.\n");
-		printf("-mx\t\t\t.\n");
-		printf("-loc\t\t\t.\n");
-		printf("-r\t\t\t.\n");
-		printf("-t\t\t\t.\n");
-		printf("-h\t\t\tMuestra esta ayuda.\n");
+}
+
+void masticarParametros(int argc, char *argv[]){
+	int i=0;
+	char* parametro;
+	for(i=0; i<argc; i++){
+		if(strcmp(argc, "-h"));
+	}
+	//tiene que seguir
 }
 
 /*
@@ -39,14 +76,20 @@ void ayuda()
  */
 void main(int argc, char *argv[]) {                   
 	int help = 0;
-	
-	if(argc==1)
+	masticarParametros();
+	if(argc==1 || _h=1)
 	{
-		//un solo parametro (apuertos)
+		//un solo parametro o -h activado
 		ayuda();
 	}
 	else
-	{	
+	{
+		if(servidor==NULL) servidor="8.8.8.8";
+		if(puerto==NULL) puerto="53";
+		if(-t)	
+	}
+}
+		/*
 		int i;
 		for (i=0; i<argc; i++)
 		{	
@@ -109,6 +152,6 @@ void main(int argc, char *argv[]) {
 					exit(PARAM_INV);
 				}
 			}	
-		}	
-	}
-}
+		}
+		*/	
+

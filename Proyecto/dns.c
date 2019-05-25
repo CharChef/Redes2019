@@ -3,19 +3,18 @@
 //Dated : 29/4/2009
  
 //Header Files
-#include<stdio.h> //printf
-#include<string.h>    //strlen
-#include<stdlib.h>    //malloc
-#include<sys/socket.h>    //you know what this is for
-#include<arpa/inet.h> //inet_addr , inet_ntoa , ntohs etc
-#include<netinet/in.h>
-#include<unistd.h>    //getpid
+#include<stdio.h> 		//printf
+#include<string.h>    	//strlen
+#include<stdlib.h>    	//malloc
+#include<sys/socket.h>  //you know what this is for
+#include<arpa/inet.h> 	//inet_addr , inet_ntoa , ntohs etc
+#include<netinet/in.h>	
+#include<unistd.h>    	//getpid
  
 //List of DNS Servers registered on the system
-char dns_servers[10][100];
-int dns_server_count = 0;
+char dns_server[18];
+
 //Types of DNS resource records :)
- 
 #define T_A 1 //Ipv4 address
 #define T_NS 2 //Nameserver
 #define T_CNAME 5 // canonical name
@@ -89,7 +88,7 @@ int main( int argc , char *argv[])
 {
     unsigned char hostname[100];
  
-    //Get the DNS servers from the resolv.conf file
+    //obtengo el servidor dns del archivo resolv.conf
     get_dns_servers();
      
     //Get the hostname from the terminal
@@ -124,7 +123,7 @@ void ngethostbyname(unsigned char *host , int query_type)
  
     dest.sin_family = AF_INET;
     dest.sin_port = htons(53);
-    dest.sin_addr.s_addr = inet_addr(dns_servers[0]); //dns servers
+    dest.sin_addr.s_addr = inet_addr(dns_server); //dns servers
  
     //Set the DNS structure to standard queries
     dns = (struct DNS_HEADER *)&buf;
@@ -135,7 +134,7 @@ void ngethostbyname(unsigned char *host , int query_type)
     dns->aa = 0; //Not Authoritative
     dns->tc = 0; //This message is not truncated
     dns->rd = 1; //Recursion Desired
-    dns->ra = 0; //Recursion not available! hey we dont have it (lol)
+    dns->ra = 1; //Recursion not available! hey we dont have it (lol)
     dns->z = 0;
     dns->ad = 0;
     dns->cd = 0;
@@ -264,7 +263,7 @@ void ngethostbyname(unsigned char *host , int query_type)
             printf("has IPv4 address : %s",inet_ntoa(a.sin_addr));
         }
          
-        if(ntohs(answers[i].resource->type)==5) 
+        if(ntohs(answers[i].resource->type)==T_CNAME) 
         {
             //Canonical name for an alias
             printf("has alias name : %s",answers[i].rdata);
@@ -382,14 +381,10 @@ void get_dns_servers()
         {
             p = strtok(line , " ");
             p = strtok(NULL , " ");
-             
-            //p now is the dns ip :)
-            //????
+            strcpy(dns_server , p);
         }
     }
-     
-    strcpy(dns_servers[0] , "208.67.222.222");
-    strcpy(dns_servers[1] , "208.67.220.220");
+    
 }
  
 /*

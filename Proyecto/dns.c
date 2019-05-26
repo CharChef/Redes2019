@@ -12,7 +12,7 @@
 #include<unistd.h>    	//getpid
  
 //List of DNS Servers registered on the system
-char dns_server[18];
+//char dns_server[18];
 
 //Types of DNS resource records :)
 #define T_A 1 //Ipv4 address
@@ -23,10 +23,10 @@ char dns_server[18];
 #define T_MX 15 //Mail server
  
 //Function Prototypes 
-void ngethostbyname (unsigned char* , int);
+void ngethostbyname (unsigned char*, unsigned char*, int, int);
 void ChangetoDnsNameFormat (unsigned char*,unsigned char*);
 unsigned char* ReadName (unsigned char*,unsigned char*,int*);
-void get_dns_servers();
+//void get_dns_servers();
  
 //DNS header structure
 struct DNS_HEADER
@@ -83,7 +83,8 @@ typedef struct
     unsigned char *name;
     struct QUESTION *ques;
 } QUERY;
- 
+
+/*
 int main( int argc , char *argv[])
 {
     unsigned char hostname[100];
@@ -99,12 +100,40 @@ int main( int argc , char *argv[])
     ngethostbyname(hostname , T_A);
  
     return 0;
+}*/
+
+/*
+ * Esto tendria que ser asi
+ * int consultar(unsigned char* ip_host, char* ip_dns_server, int num_puerto, int q_type, int recursiva)
+ */
+int consultar(unsigned char* ip_host, unsigned char* ip_dns, int q_type, int recursiva)
+{
+
+	/*
+		if (no ingresaron servidorDNS) 
+ 	 	{
+			get_dns_servers(); Saco el servDNS del archivo resolv.conf
+			ngethostbyname(ip_host, q_type, recursiva);	
+ 	 	}
+ 	 	else
+ 	 	{
+			ngethostbyname(ip_host, ip_dns_server, num_puerto, q_type, recursiva);
+ 	 	}
+	 	
+	 */
+
+	//obtengo el servidor dns del archivo resolv.conf
+    //get_dns_servers();
+
+    //Llamo al metodo que realiza la consulta
+    ngethostbyname(ip_host, ip_dns, q_type, recursiva);
 }
+
  
 /*
  * Perform a DNS query by sending a packet
  * */
-void ngethostbyname(unsigned char *host , int query_type)
+void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int query_type, int recursiva)
 {
     unsigned char buf[65536],*qname,*reader;
     int i , j , stop , s;
@@ -123,18 +152,18 @@ void ngethostbyname(unsigned char *host , int query_type)
  
     dest.sin_family = AF_INET;
     dest.sin_port = htons(53);
-    dest.sin_addr.s_addr = inet_addr(dns_server); //dns servers
+    dest.sin_addr.s_addr = inet_addr(ip_dns); //dns servers
  
     //Set the DNS structure to standard queries
     dns = (struct DNS_HEADER *)&buf;
  
     dns->id = (unsigned short) htons(getpid());
-    dns->qr = 0; //This is a query
-    dns->opcode = 0; //This is a standard query
-    dns->aa = 0; //Not Authoritative
-    dns->tc = 0; //This message is not truncated
-    dns->rd = 1; //Recursion Desired
-    dns->ra = 1; //Recursion not available! hey we dont have it (lol)
+    dns->qr = 0; 			//This is a query
+    dns->opcode = 0; 		//This is a standard query
+    dns->aa = 0; 			//Not Authoritative
+    dns->tc = 0; 			//This message is not truncated
+    dns->rd = recursiva; 	//Bit Recursion Desired
+    dns->ra = 1; 			//Recursion not available! hey we dont have it (lol)
     dns->z = 0;
     dns->ad = 0;
     dns->cd = 0;
@@ -361,7 +390,7 @@ u_char* ReadName(unsigned char* reader,unsigned char* buffer,int* count)
  
 /*
  * Get the DNS servers from /etc/resolv.conf file on Linux
- * */
+ * 
 void get_dns_servers()
 {
     FILE *fp;
@@ -386,6 +415,7 @@ void get_dns_servers()
     }
     
 }
+*/
  
 /*
  * This will convert www.google.com to 3www6google3com 

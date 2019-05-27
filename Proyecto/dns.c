@@ -3,13 +3,13 @@
 //Dated : 29/4/2009
  
 //Header Files
-#include<stdio.h> 		//printf
-#include<string.h>    	//strlen
-#include<stdlib.h>    	//malloc
-#include<sys/socket.h>  //you know what this is for
-#include<arpa/inet.h> 	//inet_addr , inet_ntoa , ntohs etc
-#include<netinet/in.h>	
-#include<unistd.h>    	//getpid
+#include<stdio.h> //printf
+#include<string.h>    //strlen
+#include<stdlib.h>    //malloc
+#include<sys/socket.h>    //you know what this is for
+#include<arpa/inet.h> //inet_addr , inet_ntoa , ntohs etc
+#include<netinet/in.h>
+#include<unistd.h>    //getpid
  
 //List of DNS Servers registered on the system
 //char dns_server[18];
@@ -18,12 +18,13 @@
 #define T_A 1 //Ipv4 address
 #define T_NS 2 //Nameserver
 #define T_CNAME 5 // canonical name
-#define T_SOA 6 /* start of authority zone */
-#define T_PTR 12 /* domain name pointer */
+#define T_SOA 6 // start of authority zone 
+#define T_PTR 12 // domain name pointer 
 #define T_MX 15 //Mail server
+
  
 //Function Prototypes 
-void ngethostbyname (unsigned char*, unsigned char*, int, int);
+void ngethostbyname (unsigned char*, unsigned char*, int, int, int);
 void ChangetoDnsNameFormat (unsigned char*,unsigned char*);
 unsigned char* ReadName (unsigned char*,unsigned char*,int*);
 //void get_dns_servers();
@@ -106,7 +107,7 @@ int main( int argc , char *argv[])
  * Esto tendria que ser asi
  * int consultar(unsigned char* ip_host, char* ip_dns_server, int num_puerto, int q_type, int recursiva)
  */
-int consultar(unsigned char* ip_host, unsigned char* ip_dns, int q_type, int recursiva)
+int consultar(unsigned char* ip_host, unsigned char* ip_dns, int puerto, int recursiva)
 {
 
 	/*
@@ -126,14 +127,14 @@ int consultar(unsigned char* ip_host, unsigned char* ip_dns, int q_type, int rec
     //get_dns_servers();
 
     //Llamo al metodo que realiza la consulta
-    ngethostbyname(ip_host, ip_dns, q_type, recursiva);
+    ngethostbyname(ip_host, ip_dns, puerto, T_A, recursiva);
 }
 
  
 /*
  * Perform a DNS query by sending a packet
  * */
-void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int query_type, int recursiva)
+void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int puerto, int query_type, int recursiva)
 {
     unsigned char buf[65536],*qname,*reader;
     int i , j , stop , s;
@@ -146,12 +147,19 @@ void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int query_type, 
     struct DNS_HEADER *dns = NULL;
     struct QUESTION *qinfo = NULL;
  
-    printf("Resolving %s" , host);
+    printf("Resolving %s\n" , host);
  
-    s = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP); //UDP packet for DNS queries
- 
+    
+    if((s = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP)) < 0)
+	{
+   		printf(stderr, "Error al crear el socket\n");
+   		return 1;
+	}
+
+	printf("\nSocket %i (%i, %i, %i)\n", s,AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+
     dest.sin_family = AF_INET;
-    dest.sin_port = htons(53);
+    dest.sin_port = htons(puerto);
     dest.sin_addr.s_addr = inet_addr(ip_dns); //dns servers
  
     //Set the DNS structure to standard queries
@@ -163,7 +171,7 @@ void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int query_type, 
     dns->aa = 0; 			//Not Authoritative
     dns->tc = 0; 			//This message is not truncated
     dns->rd = recursiva; 	//Bit Recursion Desired
-    dns->ra = 1; 			//Recursion not available! hey we dont have it (lol)
+    dns->ra = 0; 			//Recursion not available! hey we dont have it (lol)
     dns->z = 0;
     dns->ad = 0;
     dns->cd = 0;
@@ -172,16 +180,20 @@ void ngethostbyname(unsigned char *host, unsigned char *ip_dns, int query_type, 
     dns->ans_count = 0;
     dns->auth_count = 0;
     dns->add_count = 0;
- 
+
     //point to the query portion
     qname =(unsigned char*)&buf[sizeof(struct DNS_HEADER)];
- 
+ 	
     ChangetoDnsNameFormat(qname , host);
     qinfo =(struct QUESTION*)&buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname) + 1)]; //fill it
  
-    qinfo->qtype = htons( query_type ); //type of the query , A , MX , CNAME , NS etc
+ 	qinfo->qtype = htons( query_type ); //type of the query , A , MX , CNAME , NS etc
     qinfo->qclass = htons(1); //its internet (lol)
- 
+
+    //////////////////////////////////////////////PRINTMENSAJE
+ 	//printMensaje(dns, qinfo, qname);
+
+ 	//printDestino(&dest);
     printf("\nSending Packet...");
     if( sendto(s,(char*)buf,sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION),0,(struct sockaddr*)&dest,sizeof(dest)) < 0)
     {
@@ -439,4 +451,39 @@ void ChangetoDnsNameFormat(unsigned char* dns,unsigned char* host)
         }
     }
     *dns++='\0';
+}
+
+void printMensaje(struct DNS_HEADER * dns, struct QUESTION * qinfo, unsigned char * qname)
+{
+	printf("..........................................QUERY.....................................\n");
+	printf("........................................dns_header..................................\n");
+	printf("id = %d\n", dns->id);
+	printf("rd = %d\n", dns->rd);
+	printf("tc = %d\n", dns->tc);
+	printf("aa = %d\n", dns->aa);
+	printf("opcode = %d\n", dns->opcode);
+	printf("qr = %d\n", dns->qr);
+	printf("rcode = %d\n", dns->rcode);
+	printf("cd = %d\n", dns->cd);
+	printf("ad = %d\n", dns->ad);
+	printf("z = %d\n", dns->z);
+	printf("ra = %d\n", dns->ra);
+	printf("q_count = %d\n", dns->q_count);
+	printf("ans_count = %d\n", dns->ans_count);
+	printf("auth_count = %d\n", dns->auth_count);
+	printf("add_count = %d\n", dns->add_count);
+	printf("..........................................qinfo...................................\n");
+	printf("qtype = %d\n", qinfo->qtype);
+	printf("qclass = %d\n", qinfo->qclass);
+	printf("..........................................qname...................................\n");
+	printf("qname = %i\n", qname);
+}
+
+void printDestino(struct sockaddr_in* destino)
+{
+    printf(".........................................Destino....................................\n");
+    printf("sin_family = %d\n", destino->sin_family);
+    printf("sin_port = %d\n", destino->sin_port);
+    printf("in_addr = %i\n", destino->sin_addr.s_addr);
+    printf("sin_zero[8] = %i\n", destino->sin_zero);
 }

@@ -29,11 +29,12 @@ int _loc = 0;
 int _r = 0;
 int _t = 0;
 char* servidor=NULL;
-char* puerto=NULL;
+int puerto=0;
 char* consulta=NULL;
 
-void obtenerIP (char* );
+void obtenerHost (char* );
 char* substring(const char*, int, int);
+void get_dns_default();
 void ayuda();
 void ayudaConsulta();
 void ayudaServidor();
@@ -90,7 +91,7 @@ void ayuda(){
 		else{ //este else podria no estar
 			if(consulta!=NULL)ayudaConsulta();
 			if(servidor!=NULL)ayudaServidor();
-			if(puerto!=NULL)ayudaPuerto();
+			if(puerto!=0)ayudaPuerto();
 			if(_a)ayudaA();
 			if(_mx)ayudaMx();
 			if(_loc)ayudaLoc();
@@ -163,7 +164,6 @@ void masticarParametros(int argc, char *argv[]){
 		if(strchr(argv[i], '@')!=NULL)
 		{
 			servidor = substring(argv[i],1,strlen(argv[i]));
-			printf("%s\n", servidor);
 			break;
 		}
 	}
@@ -192,8 +192,8 @@ void main(int argc, char *argv[]) {
 	else
 	{
 		int recursion;
-		if(servidor==NULL) servidor="8.8.8.8";
-		if(puerto==NULL) puerto="53";
+		if(servidor==NULL) get_dns_default();
+		if(puerto==0) puerto=53;
 		if(_t==1)
 		{
 			recursion = 0;
@@ -203,66 +203,40 @@ void main(int argc, char *argv[]) {
 			recursion = 1;
 		}
 		//dnsquery <consulta>
-		obtenerIP(argv[1]);
+		obtenerHost(argv[1]);
 		
-		printf("Consulta = %s\nRecursion = %i\n\n", consulta, recursion );
+		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
 
-		consultar(consulta,1,recursion);
+		consultar(consulta,servidor,puerto,recursion);
 			
 	}
 }
 
 /*
- * Procedimiento obtenerIP
  * 
- * Dado el argumento <IP> pasado por parametro, modifica el
- * valor de la variable global ip_Host y optiene su inversa
- * correspondiente.
  * 
  */
-void obtenerIP (char* ip_argumento){
-		
-	struct in_addr **addr_list;
-	struct in_addr ipv4addr;
+void obtenerHost (char* host_argumento){
+	
 	struct hostent *host;
-	int i;
 	
-	//Recibo una IP
-    if(isdigit(ip_argumento[0]))
+	//Recibo un nombre
+    if((host = gethostbyname(host_argumento)) != 0)
     {
-        consulta=ip_argumento;
-        inet_pton(AF_INET, consulta, &ipv4addr);
-        if( (host = gethostbyaddr(&ipv4addr, sizeof ipv4addr, AF_INET)) != 0){
-			printf("Direccion IP: %s\n",consulta);
-			printf("Nombre Host: %s\n",host->h_name);
-		}
-		else
-		{
-			printf("Direccion IP: %s\n",consulta);
-			printf("Nombre Host: No se pudo resolver.\n");
-		}
-    }    
-    //Recibo un nombre
-    else {
-		if( (host = gethostbyname(ip_argumento)) != 0){
-			addr_list = (struct in_addr **)host->h_addr_list;			
-			consulta=(char*)inet_ntoa(*addr_list[0]);
-			printf("Direccion IP: %s\n",consulta);
-			printf("Nombre Host: %s\n",ip_argumento);
-		}
-		else
-		{
-			herror(ip_argumento);
-			exit(IP_INV);
-		}
+		consulta = host_argumento;
 	}
-	
+	else
+	{
+		herror(host_argumento);
+		exit(IP_INV);
+	}
 }
+	
 
 /*
  * Get the DNS server from /etc/resolv.conf file on Linux
  * */
-void get_dns_server()
+void get_dns_default()
 {
     FILE *fp;
     char line[200] , *p;
@@ -270,7 +244,6 @@ void get_dns_server()
     {
         printf("Failed opening /etc/resolv.conf file \n");
     }
-     
     while(fgets(line , 200 , fp))
     {
         if(line[0] == '#')
@@ -281,7 +254,12 @@ void get_dns_server()
         {
             p = strtok(line , " ");
             p = strtok(NULL , " ");
-            strcpy(servidor, p);
+
+            //Suena chancho, pero con el strcpy tiraba segmentation fault
+            //y asi anda a la pelusha
+            int Longitud = strlen(p);
+            //servidor = substring(p,0,10);
+            servidor = substring(p,0,strlen(p));            
         }
     }
     

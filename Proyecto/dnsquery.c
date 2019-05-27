@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -19,6 +18,25 @@
 
 //Constantes -> Codigo de Salida de Errores
 const int IP_INV = 2;
+
+//colores y estilos para printf
+#define RESET   "\033[0m"
+#define BLACK   "\033[30m"      /* Black */
+#define RED     "\033[31m"      /* Red */
+#define GREEN   "\033[32m"      /* Green */
+#define YELLOW  "\033[33m"      /* Yellow */
+#define BLUE    "\033[34m"      /* Blue */
+#define MAGENTA "\033[35m"      /* Magenta */
+#define CYAN    "\033[36m"      /* Cyan */
+#define WHITE   "\033[37m"      /* White */
+#define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+#define BOLDYELLOW  "\033[1m\033[33m"      /* Bold Yellow */
+#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
+#define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
+#define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
+#define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 
 
 int cantParametros;
@@ -105,68 +123,131 @@ void ayuda(){
  * Procedimiento ayudaConsulta
  * 
  */
-void ayudaConsulta(){}
+void ayudaConsulta(){
+	printf(BOLDGREEN "Consulta: \n" RESET);
+	printf("Este argumento, el cual debe estar siempre prensente salvo que se este \n");
+	printf("invocando a la ayuda, es la consulta que se desea resolver (en general,\n");
+	printf("es la cadena de caracteres denotando el nombre simbolico que se desea\n");
+	printf("mapear a un IP\n\n");
+	printf("Ej:\n" "~$ dnsquery "BOLDYELLOW"www.wikipedia.org"RESET"\n\n\n");
+}
 /*
  * Procedimiento ayudaServidor
  * 
  */
-void ayudaServidor(){}
+void ayudaServidor(){
+	printf(BOLDGREEN "Servidor: \n" RESET);
+	printf("Este argumento es el servidor DNS con el que se resolverá la consulta\n");
+	printf("suministrada, en caso de no estar presente este argumento se resolvera\n");
+	printf("con un servidor DNS por defecto\n\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"@8.8.8.8"RESET"\n\n\n");
+}
+
 /*
  * Procedimiento ayudaPuerto
  * 
  */
-void ayudaPuerto(){}
+void ayudaPuerto(){
+	printf(BOLDGREEN "Puerto: \n" RESET);
+	printf("este parametro es opcional, el cual solo puede ser especificado si tambien\n");
+	printf("se especifico un servidor, permite indicar que el servidor contra el cual\n");
+	printf("se resolvera la consulta no está ligado al puerto DNS estandar. Caso que\n");
+	printf("no se indique se asume que la consulta sera dirida al puerto estandar del\n");
+	printf("servidor\n\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org @8.8.8.8"BOLDYELLOW":53"RESET"\n\n\n");
+}
+
 /*
  * Procedimiento ayudaA
  * 
  */
-void ayudaA(){}
+void ayudaA(){
+	printf(BOLDGREEN "\"-a\": \n" RESET);
+	printf("Si se espesifica este parametro, la consulta se trata de un nombre simbolico\n");
+	printf("y se desea conocer su correspondiente IP numerico asociado\n");
+	printf("Los opcionales \"-a\" \"-mx\" y \"-loc\" son excluyentes entre si, en caso de no\n");
+	printf("espesificarse ninguno, se asume \"-a\"\n\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"-a"RESET"\n\n\n");
+}
 /*
  * Procedimiento ayudaMx
  * 
  */
-void ayudaMx(){}
+void ayudaMx(){
+	printf(BOLDGREEN "\"-mx\": \n" RESET);
+	printf("Si se espesifica este parametro, se desea determinar el servidor a cargo de\n");
+	printf("la recepcion de correo electronico para el dominio indicado en la consulta\n");
+	printf("Los opcionales \"-a\" \"-mx\" y \"-loc\" son excluyentes entre si, en caso de no\n");
+	printf("espesificarse ninguno, se asume \"-a\"\n\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"-mx"RESET"\n\n\n");
+}
 /*
  * Procedimiento ayudaLoc
  * 
  */
-void ayudaLoc(){}
+
+void ayudaLoc(){
+	printf(BOLDGREEN "\"-loc\": \n" RESET);
+	printf("Si se espesifica este parametro, se desea recuperar la informacion relativa\n");
+	printf("a la ubicacion geográfica del dominio indicado en la consulta\n");
+	printf("Los opcionales \"-a\" \"-mx\" y \"-loc\" son excluyentes entre si, en caso de no\n");
+	printf("espesificarse ninguno, se asume \"-a\"\n\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"-loc"RESET"\n\n\n");
+}
 /*
  * Procedimiento ayudaR
  * 
  */
-void ayudaR(){}
+void ayudaR(){
+	printf(BOLDGREEN "\"-r\": \n" RESET);
+	printf("en caso de espesificarse este parametro, se esta solicitando que la ");
+	printf("consulta contega el bit de recursion desired activado es decir, puede");
+	printf("pasar una de dos cosas, o bien el servidor acepta la consulta");
+	printf("recursica y retorna la respuesta definitiva, o bien rechaza ese tipo");
+	printf("de consulta, por lo que no se podra obtener la respuesta definitivva");
+	printf("bajo esas condiciones");
+	printf("Los opcionales \"-r\" y \"-t\" son excluyentes entre si, en caso de no\n");
+	printf("espesificarse ninguno, se asume por defecto que se resuelve de mandera\n");
+	printf("recursiva\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"-r"RESET"\n\n\n");
+}
 /*
  * Procedimiento ayudaT
  * 
  */
-void ayudaT(){}
+void ayudaT(){
+	printf(BOLDGREEN "\"-t\": \n" RESET);
+	printf("En caso de espesificarse este parametro, se solicita que la consulta");
+	printf("se resuelva iterativamente, mostrando na traza con la evolucion de la");
+	printf("misma, esto es, mostrando las distintas respuesta parciales que se");
+	printf("van obteniendo al efectuar una consulta no recursiva hasta dar con la");
+	printf("respuesta final, similar a la funcionalida provista por el comando");
+	printf("dig con la opcion --trace");
+	printf("Los opcionales \"-r\" y \"-t\" son excluyentes entre si, en caso de no\n");
+	printf("espesificarse ninguno, se asume por defecto que se resuelve de mandera\n");
+	printf("recursiva\n");
+	printf("Ej:\n" "~$ dnsquery www.wikipedia.org "BOLDYELLOW"-t"RESET"\n\n\n");
+}
 
 
 void masticarParametros(int argc, char *argv[]){
 	int i=0;
 	char* parametro;
+	//char** restos = malloc(sizeof(char*)*argc); int cantResto = 0;
 	for(i=0; i<argc; i++){
-		if(strcmp(argv[i], "-h")==0)
-		{
+		if(strcmp(argv[i], "-h")==0){
 			_h = 1;
-			break;
 		}
-	}
-	for(i=0; i<argc; i++){
-		if(strcmp(argv[i], "-t")==0)
-		{
+		else if(strcmp(argv[i], "-t")==0){
 			_t = 1;
-			break;
 		}
-	}
-	for(i=0; i<argc; i++){
-		if(strchr(argv[i], '@')!=NULL)
-		{
+		else if(strchr(argv[i], '@')!=NULL){
 			servidor = substring(argv[i],1,strlen(argv[i]));
-			break;
 		}
+		//else{	restos[cantResto] = argv[i];	}
 	}
+	
+	//for(i=0; i<argc; i++){ otras opciones }
 	//tiene que seguir
 }
 
@@ -205,7 +286,8 @@ void main(int argc, char *argv[]) {
 		//dnsquery <consulta>
 		obtenerHost(argv[1]);
 		
-		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
+		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", 
+			consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
 
 		consultar(consulta,servidor,puerto,recursion);
 			

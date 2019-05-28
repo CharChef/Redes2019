@@ -18,6 +18,7 @@
 
 //Constantes -> Codigo de Salida de Errores
 const int IP_INV = 2;
+#define debug 0
 
 //colores y estilos para printf
 #define RESET   "\033[0m"
@@ -107,6 +108,7 @@ void ayuda(){
             printf("-h\t\t\tMuestra esta ayuda.\n");
 		}
 		else{ //este else podria no estar
+			printf("\n=== SE MOSTRARA LA AYUDA SEGUN PARAMETROS PRESENTES ===\n\n");
 			if(consulta!=NULL)ayudaConsulta();
 			if(servidor!=NULL)ayudaServidor();
 			if(puerto!=0)ayudaPuerto();
@@ -242,8 +244,20 @@ void masticarParametros(int argc, char *argv[]){
 		else if(strcmp(argv[i], "-t")==0){
 			_t = 1;
 		}
+		//else if(strcmp(argv[i], "@")==0){
 		else if(strchr(argv[i], '@')!=NULL){
-			servidor = substring(argv[i],1,strlen(argv[i]));
+			int largo = strlen(argv[i]);
+			int _puer = 1;
+			for(_puer = 1; _puer < largo; _puer++){
+				if(debug) printf("estoy en serv %s\n", argv[i]);
+				if(argv[i][_puer]==':'){
+					char * ret = substring(argv[i], _puer+1, largo);;
+					puerto = (int) strtol(ret, NULL, 10);
+					break;
+				}
+			}
+			servidor = substring(argv[i], 1, _puer);
+			if(debug)printf("servidor: %s | puerto: %i\n", servidor, puerto);
 			
 		}
 		//else{	restos[cantResto] = argv[i];	}

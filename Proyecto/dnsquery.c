@@ -233,6 +233,7 @@ void ayudaT(){
 void masticarParametros(int argc, char *argv[]){
 	int i=0;
 	char* parametro;
+	cantParametros = argc;
 	//char** restos = malloc(sizeof(char*)*argc); int cantResto = 0;
 	for(i=0; i<argc; i++){
 		if(strcmp(argv[i], "-h")==0){
@@ -243,6 +244,7 @@ void masticarParametros(int argc, char *argv[]){
 		}
 		else if(strchr(argv[i], '@')!=NULL){
 			servidor = substring(argv[i],1,strlen(argv[i]));
+			
 		}
 		//else{	restos[cantResto] = argv[i];	}
 	}
@@ -265,7 +267,7 @@ void masticarParametros(int argc, char *argv[]){
 void main(int argc, char *argv[]) {                   
 	int help = 0;
 	masticarParametros(argc,argv);
-	if(argc==1 || _h==1)
+	if((argc==1) || (_h!=0))
 	{
 		//un solo parametro o -h activado
 		ayuda();

@@ -34,7 +34,6 @@
 //Estructura del Encabezado
 struct DNS_HEADER
 {
-
     unsigned short id; 			// Identificador
     
     unsigned char rd :1; 		// Bit Recursion Desired
@@ -97,9 +96,7 @@ void enviar(int, unsigned char buf[], unsigned char * , struct sockaddr_in);
 void recibir(int, unsigned char buf[], unsigned char *, struct sockaddr_in);
 void leerEImprimirRespuestas(struct DNS_HEADER *, char *, struct sockaddr_in, unsigned char *);
 void printMensaje(struct DNS_HEADER *, struct QUESTION *, unsigned char *);
-void printDestino(struct sockaddr_in *);
-
-
+void printDestino(struct sockaddr_in);
 
 /*
  * Método Consultar
@@ -166,7 +163,7 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
    	if(debugMode) printMensaje(dns_h, qinfo, qname);
 
    	//-----------------------------debugMode----------------------------
-   	if(debugMode) printDestino(&dest);
+   	if(debugMode) printDestino(dest);
  	
     //Envio la consulta
     enviar(sock, buf, qname, dest);
@@ -223,7 +220,7 @@ void recibir(int sock, unsigned char buf[], unsigned char * qname, struct sockad
 
 void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct sockaddr_in sai, unsigned char * lector)
 {
-	int i, j, parar = 0;
+	int i, j, tipo, parar = 0;
 	struct RES_RECORD resp[20], autor[20], adic[20];
 
     for(i=0; i<ntohs(dns_h->ancount); i++)
@@ -233,25 +230,41 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
  
         resp[i].resource = (struct R_DATA*)(lector);
         lector = lector + sizeof(struct R_DATA);
- 
-        if(ntohs(resp[i].resource->type) == 1) 	//Si es una consulta de conversión de nombre
+ 		
+        tipo = ntohs(resp[i].resource->type);
+
+        switch (tipo)
         {
-            resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+        	case 1:	//Si es una consulta de conversión de nombre
+        	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
  
-            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
-            {
-                resp[i].rdata[j] = lector[j];
-            }
- 
-            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
- 
-            lector = lector + ntohs(resp[i].resource->data_len);
+	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	                resp[i].rdata[j] = lector[j];
+	            }
+	 
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	 
+	            lector = lector + ntohs(resp[i].resource->data_len);
+
+	            break;
+        	}
+        	case 15: //Si es una consulta de servidor de correo electrónico
+        	{
+
+        		printf("Leemos respuestas del tipo MX.\n");
+
+	            break;
+
+        	}
+        	default:
+        	{
+            	resp[i].rdata = leerHost(lector, buf, &parar);
+            	lector = lector + parar;
+        	}
         }
-        else
-        {
-            resp[i].rdata = leerHost(lector, buf, &parar);
-            lector = lector + parar;
-        }
+        
     }
  
     //Leemos Respuestas Autoritativas
@@ -276,69 +289,119 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
         adic[i].resource = (struct R_DATA*)(lector);
         lector += sizeof(struct R_DATA);
  
-        if(ntohs(adic[i].resource->type) == 1)
+        tipo = ntohs(adic[i].resource->type);
+
+        switch (tipo)
         {
-            adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
-            for(j=0; j<ntohs(adic[i].resource->data_len); j++)
-            {
-            	adic[i].rdata[j] = lector[j];
-            }
+        	case 1:		//Si es una consulta de conversión de nombre
+        	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
  
-            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
-            lector += ntohs(adic[i].resource->data_len);
-        }
-        else
-        {
-            adic[i].rdata = leerHost(lector, buf, &parar);
-            lector += parar;
-        }
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	 
+	            lector = lector + ntohs(adic[i].resource->data_len);
+
+	            break;
+        	}
+        	case 15:	//Si es una consulta de servidor de correo electrónico
+        	{
+
+        		printf("Addicional: Es de tipo MX.\n");
+
+	            break;
+
+        	}
+        	default:
+        	{
+            	adic[i].rdata = leerHost(lector, buf, &parar);
+            	lector = lector + parar;
+        	}
+    	}
     }
 
     //Imprimimos Respuestas
-    printf("\nRegistro de Respuestas : %d \n" , ntohs(dns_h->ancount) );
+    printf("\nNumero de Respuestas : %d \n" , ntohs(dns_h->ancount) );
     for(i=0 ; i < ntohs(dns_h->ancount) ; i++)
     {
-        printf("Nombre de Host : %s \n", resp[i].name);
- 
-        if( ntohs(resp[i].resource->type) == T_A) //IPv4 address
+        printf("El Host %s ", resp[i].name);
+ 		
+ 		tipo = ntohs(resp[i].resource->type);
+
+        switch (tipo)
         {
-            long *p;
-            p = (long*)resp[i].rdata;
-            sai.sin_addr.s_addr = (* p); //working without ntohl
-            printf("Dirección IP : %s\n", inet_ntoa(sai.sin_addr));
-        } 
+        	case 1:		//Si es una consulta de conversión de nombre
+        	{
+        		long *p;
+           		p = (long*)resp[i].rdata;
+            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	printf("tiene como dirección IPv4 : %s\n", inet_ntoa(sai.sin_addr));
+        		break;
+        	}
+        	case 15:	//Si es una consulta de servidor de correo electrónico
+        	{
+        		long *p;
+           		p = (long*)resp[i].rdata;
+            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	printf("tiene como servidor de correo electrónico : %s\n", inet_ntoa(sai.sin_addr));
+        		break;
+        	}
+        	default:
+        	{
+        		printf("La Localización va aca\n");
+        	}
+        }
+        
         printf("\n");
     }
 
-    //print authorities
-    printf("\nAuthoritive Records : %d \n" , ntohs(dns_h->nscount) );
+    //Imprimimos Respuestas Autoritativas
+    printf("\nNúmero de Respuestas Autoritarias : %d \n" , ntohs(dns_h->nscount) );
     for( i=0 ; i < ntohs(dns_h->nscount) ; i++)
     {
-         
-        printf("Name : %s ",autor[i].name);
         if(ntohs(autor[i].resource->type)==2)
         {
-            printf("has nameserver : %s",autor[i].rdata);
+        	printf("El Host %s tiene como alias : %s ",autor[i].name,autor[i].rdata);
+        	printf("\n");
         }
-        printf("\n");
     }
  
     //print additional resource records
-    printf("\nAdditional Records : %d \n" , ntohs(dns_h->arcount) );
+    printf("\nNúmero de Respuestas Adicionales : %d \n" , ntohs(dns_h->arcount) );
     for(i=0; i < ntohs(dns_h->arcount) ; i++)
     {
         printf("Name : %s ",adic[i].name);
-        if(ntohs(adic[i].resource->type)==1)
-        {
-            long *p;
-            p = (long*)adic[i].rdata;
-            sai.sin_addr.s_addr = (*p);
-            printf("has IPv4 address : %s",inet_ntoa(sai.sin_addr));
-        }
-        printf("\n");
-    }
 
-    return;
+        tipo = ntohs(adic[i].resource->type);
+
+        switch (tipo)
+        {
+        	case 1:		//Si es una consulta de conversión de nombre
+        	{
+        		long *p;
+           		p = (long*)adic[i].rdata;
+            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	printf("tiene como dirección IPv4 : %s\n", inet_ntoa(sai.sin_addr));
+        		break;
+        	}
+        	case 15:	//Si es una consulta de servidor de correo electrónico
+        	{
+        		long *p;
+           		p = (long*)adic[i].rdata;
+            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	printf("tiene como servidor de correo electrónico : %s\n", inet_ntoa(sai.sin_addr));
+        		break;
+        	}
+        	default:
+        	{
+        		printf("La Localización va aca\n");
+        	}
+        }
+    }
 }
 
 /*
@@ -359,7 +422,7 @@ void formatoDNS(unsigned char* dns, unsigned char* host)
         if(host[i]=='.') 
         {
             *dns++ = i-lock;
-            for(;lock<i;lock++) 
+            for(0;lock<i;lock++) 
             {
                 *dns++=host[lock];
             }
@@ -456,11 +519,11 @@ void printMensaje(struct DNS_HEADER * dns, struct QUESTION * qinfo, unsigned cha
 	printf("qname = %hhn\n", qname);
 }
 
-void printDestino(struct sockaddr_in* destino)
+void printDestino(struct sockaddr_in destino)
 {
     printf(".........................................Destino....................................\n");
-    printf("sin_family = %d\n", destino->sin_family);
-    printf("sin_port = %d\n", destino->sin_port);
-    printf("in_addr = %i\n", destino->sin_addr.s_addr);
-    printf("sin_zero[8] = %hhn\n", destino->sin_zero);
+    printf("sin_family = %d\n", destino.sin_family);
+    printf("sin_port = %d\n", destino.sin_port);
+    printf("in_addr = %i\n", destino.sin_addr.s_addr);
+    printf("sin_zero[8] = %hhn\n", destino.sin_zero);
 }

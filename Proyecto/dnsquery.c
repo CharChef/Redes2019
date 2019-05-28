@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 //Incluyo la interface del módulo dns
-#include "dns.h"
+#include "consultar.h"
 
 //Constantes -> Codigo de Salida de Errores
 const int IP_INV = 2;
@@ -289,7 +289,7 @@ void main(int argc, char *argv[]) {
 		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", 
 			consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
 
-		consultar(consulta,servidor,puerto,recursion);
+		consultar(consulta,servidor,puerto,1,recursion);
 			
 	}
 }

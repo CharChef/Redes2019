@@ -1,0 +1,39 @@
+header
+
+ID = Un identificador de 16 bits asignado por el programa que genera cualquier tipo de consulta. Este identificador se copia la respuesta correspondiente y puede ser utilizado por el solicitante para hacer coincidir las respuestas con las consultas pendientes.
+
+QR = Un campo de un bit que especifica si este mensaje es una consulta (0) o una respuesta (1).
+
+OPCODE = Un campo de cuatro bits que especifica el tipo de consulta en este mensaje. Este valor lo establece el originador de una consulta y se copia en la respuesta. Los valores son:
+ 	- 0 = una consulta estándar (QUERY)
+ 	- 1 = una consulta inversa (IQUERY)
+ 	- 2 = una solicitud de estado del servidor (STATUS)
+ 	- 3-15 = reservado para uso futuro
+
+AA = Respuesta autoritativa: este bit es válido en las respuestas y especifica que el servidor de nombres que responde es una autoridad para el nombre de dominio en la sección de la pregunta. Tenga en cuenta que el contenido de la sección de respuesta puede tener varios nombres de propietarios debido a los alias. El bit AA corresponde al nombre que coincide con el nombre de la consulta, o el nombre del primer propietario en la sección de respuesta.
+
+TC = TrunCation: especifica que este mensaje se truncó debido a una longitud mayor que la permitida en el canal de transmisión.
+
+RD = Recursión deseada: este bit se puede establecer en una consulta y se copia en la respuesta. Si se establece RD, indica al servidor de nombres que busque la consulta de forma recursiva. El soporte de consultas recursivas es opcional.
+
+RA = Recursión disponible: esto se establece o borra en una respuesta, y indica si el soporte de consultas recursivas está disponible en el servidor de nombres.
+
+Z = Reservado para uso futuro. Debe ser cero en todas las consultas y respuestas.
+
+RCODE = Código de respuesta: este campo de 4 bits se establece como parte de las respuestas. Los valores tienen la siguiente interpretación:
+	- 0 = Sin condición de error
+ 	- 1 = Error de formato: el servidor de nombres no pudo interpretar la consulta.
+ 	- 2 Error del servidor: el servidor de nombres no pudo procesar esta consulta debido a un problema con el servidor de nombres.
+ 	- 3 = Error de nombre: sólo significativo para las respuestas de un servidor de nombres autorizado, este código significa que el 		nombre de dominio al que se hace referencia en la consulta no existe.
+ 	- 4 = No implementado: el servidor de nombres no admite el tipo de consulta solicitado.
+ 	- 5 = Rechazado: el servidor de nombres se niega a realizar la operación especificada por motivos de políticas. Por ejemplo, un 		servidor de nombres puede no desear proporcionar la información al solicitante en particular, o un servidor de nombres puede no 		desear realizar una operación particular (por ejemplo, transferencia de zona) para datos particulares.
+ 	- 6-15 = Reservado para uso futuro.
+
+QDCOUNT = un entero de 16 bits sin signo que especifica el número de entradas en la sección de preguntas.
+
+ANCOUNT = un entero de 16 bits sin signo que especifica el número de registros de recursos en la sección de respuestas.
+
+NSCOUNT = un entero sin signo de 16 bits que especifica el número de registros de recursos del servidor de nombres en la sección de registros de autoridad.
+
+ARCOUNT = un entero sin signo de 16 bits que especifica el número de registros de recursos en la sección de registros adicionales.
+

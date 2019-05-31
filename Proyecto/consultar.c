@@ -10,16 +10,18 @@
 */
 
 //Librerias
-#include<stdio.h> 			
-#include<string.h>    		
-#include<stdlib.h>    		
-#include<sys/socket.h>    
-#include<arpa/inet.h> 		
-#include<netinet/in.h>
-#include<unistd.h>    		
+#include <stdio.h> 			
+#include <string.h>    		
+#include <stdlib.h>    		
+#include <sys/socket.h>    
+#include <arpa/inet.h> 		
+#include <netinet/in.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <sys/types.h>	
 
 //Modo debug (Muestra printf)
-#define debugMode 0
+#define DebugMode 0
 
 //Tipo de consultas
 #define T_A 1 			//Dirección Ipv4
@@ -41,10 +43,10 @@ struct DNS_HEADER
     unsigned char aa :1; 		// Respuesta autoritativa
     unsigned char opcode :4; 	// Tipo de consulta en este mensaje
     unsigned char qr :1; 		// Campo Consulta(0)/Respuesta(1)
-    
+
     unsigned char rcode :4; 	// Código de respuesta
     unsigned char cd :1;
-    unsigned char ad :1;
+    unsigned char ad :1;		// Datos Auntenticados
     unsigned char z :1; 		// Reservado para uso futuro
     unsigned char ra :1; 		// Recursión disponible
         
@@ -52,7 +54,6 @@ struct DNS_HEADER
     unsigned short ancount; 	// Número de respuestas
     unsigned short nscount; 	// Número de registros de autoridad
     unsigned short arcount; 	// Número de registros adicionales
-   
 };
 
 //Estructura de la Consulta
@@ -80,6 +81,12 @@ struct RES_RECORD
     struct R_DATA * resource;
     unsigned char * rdata;
 };
+
+struct D_MAIL
+{
+    int pref;
+    unsigned char * dir;
+};
  
 //Estructura de una Query
 typedef struct
@@ -91,12 +98,29 @@ typedef struct
 //Definición de Funciones
 int consultar (unsigned char *, unsigned char *, int, int, int);
 void formatoDNS (unsigned char *, unsigned char *);
-unsigned char* leerHost (unsigned char *, unsigned char *, int *);
-void enviar(int, unsigned char buf[], unsigned char * , struct sockaddr_in);
-void recibir(int, unsigned char buf[], unsigned char *, struct sockaddr_in);
-void leerEImprimirRespuestas(struct DNS_HEADER *, char *, struct sockaddr_in, unsigned char *);
+unsigned char* leerHost (unsigned char *, char buf[], int *, int);
+void enviar(int,unsigned char buf[], int , struct sockaddr_in);
+void recibir(int,unsigned char buf[], struct sockaddr_in);
+void leerEImprimirRespuestas(struct DNS_HEADER *,unsigned char buf[], struct sockaddr_in, unsigned char *);
 void printMensaje(struct DNS_HEADER *, struct QUESTION *, unsigned char *);
 void printDestino(struct sockaddr_in);
+
+/**
+ * Funcion que retorna una subcadena de caracteres de tamaño n, comenzando desde la posicion beg, de 
+ * la string str
+ * Parametros:
+ * char* str - Cadena de caracteres original
+ * int beg - Comienzo de subcadena
+ * int n - Longitud de subcadena
+ * */
+char* substring(const char* str, int beg, int n)
+{
+   char *sub = malloc(n+1); 
+   strncpy(sub, (str + beg), n);
+   *(sub+n) = 0;
+
+   return sub;
+}
 
 /*
  * Método Consultar
@@ -104,11 +128,9 @@ void printDestino(struct sockaddr_in);
 int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec)
 {
 	unsigned char buf[65536],* qname,* lector;
-    int i , j , parar , sock;
+    int i , j , parar, tipo, sock;
  
     struct sockaddr_in sai, dest;
-
-    
  
     struct DNS_HEADER * dns_h = NULL;
     struct QUESTION * qinfo = NULL;
@@ -124,7 +146,7 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
 	}
 
 	//-----------------------------debugMode----------------------------
-	if(debugMode) printf("\nSocket %i (%i, %i, %i)\n", sock,AF_INET , SOCK_DGRAM , IPPROTO_UDP);
+	if(DebugMode) printf("\nSocket %i (%i, %i, %i)\n", sock,AF_INET , SOCK_DGRAM , IPPROTO_UDP);
 
     dest.sin_family = AF_INET;
     dest.sin_port = htons(n_port);
@@ -135,13 +157,13 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
  
     dns_h->id = (unsigned short) htons(getpid());		//Usamos el pid del proceso actual como id
     dns_h->qr = 0; 				
-    dns_h->opcode = 0; 			
+    dns_h->opcode = 0000; 			
     dns_h->aa = 0; 				
-    dns_h->tc = 0; 				
+    dns_h->tc = 0;				
     dns_h->rd = is_rec; 		
     dns_h->ra = 0; 				
     dns_h->z = 0;
-    dns_h->ad = 0;
+    dns_h->ad = 1;
     dns_h->cd = 0;
     dns_h->rcode = 0;
     dns_h->qdcount = htons(1);
@@ -160,37 +182,15 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
     qinfo->qclass = htons(1);			//Clase Internet = 1
 
     //-----------------------------debugMode----------------------------
-   	if(debugMode) printMensaje(dns_h, qinfo, qname);
+   	if(DebugMode) printMensaje(dns_h, qinfo, qname);
 
    	//-----------------------------debugMode----------------------------
-   	if(debugMode) printDestino(dest);
+   	if(DebugMode) printDestino(dest);
  	
     //Envio la consulta
-    enviar(sock, buf, qname, dest);
- 	
-    //Recibo la respuesta
-    recibir(sock, (char *)buf, qname, dest);
-    
-    dns_h = (struct DNS_HEADER*) buf;
- 	
-    lector = &buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION)];
- 
-    printf("\nContenido de la respuesta recibida : ");
-    printf("\n %d Consultas.", ntohs(dns_h->qdcount));
-    printf("\n %d Respuestas.", ntohs(dns_h->ancount));
-    printf("\n %d Servidores Autoritativos.", ntohs(dns_h->nscount));
-    printf("\n %d Registros Adicionales.\n\n", ntohs(dns_h->arcount));
- 
-   	//Leemos e imprimimos las respuestas
-    leerEImprimirRespuestas(dns_h, (char *) buf, sai, lector);
-}
-
-/*
-	Método enviar
-*/
-void enviar(int sock,  unsigned char buf[], unsigned char * qname, struct sockaddr_in dest)
-{
-	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
+    //enviar(sock, buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), dest);
+ 	//----------------------------------------------------------enviar-----------------------------------------------------------
+   	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
     {
         perror("Error al enviar la consulta.");
         exit(Err_Env);
@@ -199,15 +199,13 @@ void enviar(int sock,  unsigned char buf[], unsigned char * qname, struct sockad
     {
     	printf("Consulta Enviada.\n");
     }
-}
+    //---------------------------------------------------------------------------------------------------------------------------
 
-/*
-	Método recibir
-*/
-void recibir(int sock, unsigned char buf[], unsigned char * qname, struct sockaddr_in dest)
-{
-	int i = sizeof dest;
-    if(recvfrom (sock,(char*) buf, 65536, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
+   	//recibir(sock, buf, dest);
+    //----------------------------------------------------------recibir--------------------------------------------------------
+    i = sizeof dest;
+	int byte_count;
+    if(byte_count = recvfrom (sock, (char *) buf, sizeof(buf)-1, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
     {
         perror("Error al recibir la respuesta");
         exit(Err_Rec);
@@ -216,29 +214,51 @@ void recibir(int sock, unsigned char buf[], unsigned char * qname, struct sockad
     {
     	printf("Respuesta Recibida.\n");
     }
-}
-
-void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct sockaddr_in sai, unsigned char * lector)
-{
-	int i, j, tipo, parar = 0;
+    //--------------------------------------------------------------------------------------------------------------------------
+    for(i=0; i<sizeof(buf)-1;i++)
+    {
+    	//printf("%c", buf[i]);
+    }
+    
+    dns_h = (struct DNS_HEADER*) buf;
+ 	
+    lector = &buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION)];
+       
+    printf("\nContenido de la respuesta recibida : ");
+    printf("\n %d Consultas.", ntohs(dns_h->qdcount));
+    printf("\n %d Respuestas.", ntohs(dns_h->ancount));
+    printf("\n %d Servidores Autoritativos.", ntohs(dns_h->nscount));
+    printf("\n %d Registros Adicionales.\n\n", ntohs(dns_h->arcount));
+ 
+   	//Leemos e imprimimos las respuestas
+   	//leerEImprimirRespuestas(dns_h, buf, sai, lector);
+   	//---------------------------------------------------------leerImprimir-----------------------------------------------------
+    //int i, j, tipo, parar = 0;
 	struct RES_RECORD resp[20], autor[20], adic[20];
 
     for(i=0; i<ntohs(dns_h->ancount); i++)
     {
-        resp[i].name = leerHost(lector, buf, &parar);
-        lector = lector + parar;
- 
-        resp[i].resource = (struct R_DATA*)(lector);
-        lector = lector + sizeof(struct R_DATA);
- 		
-        tipo = ntohs(resp[i].resource->type);
+    	resp[i].name = leerHost(lector, buf, &parar,0);
+		lector = lector + parar;
+
+		resp[i].resource = (struct R_DATA*)(lector);
+		lector = lector + sizeof(struct R_DATA);
+	
+		tipo = ntohs(resp[i].resource->type);
 
         switch (tipo)
         {
         	case 1:	//Si es una consulta de conversión de nombre
         	{
         		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
- 
+
+        		//printf("%i\n", resp[i].resource->data_len);
+
+        		//for(j=0; j<ntohs(resp[i].resource->data_len);j++)
+			    //{
+			    //	printf("%d", lector[j]);
+			    //}
+
 	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
 	            {
 	                resp[i].rdata[j] = lector[j];
@@ -248,19 +268,31 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
 	 
 	            lector = lector + ntohs(resp[i].resource->data_len);
 
+	            printf("Leemos respuestas del tipo A.\n");
+
 	            break;
         	}
         	case 15: //Si es una consulta de servidor de correo electrónico
         	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+        		
+        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	               	resp[i].rdata[j] = lector[j];
+	                           
+	            }
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	 
+	            lector = lector + ntohs(resp[i].resource->data_len);
 
-        		printf("Leemos respuestas del tipo MX.\n");
-
+	            printf("Leemos respuestas del tipo MX.\n");
+				
 	            break;
 
         	}
         	default:
         	{
-            	resp[i].rdata = leerHost(lector, buf, &parar);
+            	resp[i].rdata = leerHost(lector, buf, &parar,0);
             	lector = lector + parar;
         	}
         }
@@ -270,20 +302,20 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
     //Leemos Respuestas Autoritativas
     for(i=0; i<ntohs(dns_h->nscount); i++)
     {
-        autor[i].name = leerHost(lector, buf, &parar);
+        autor[i].name = leerHost(lector, buf, &parar, 49152);
         lector += parar;
  
         autor[i].resource = (struct R_DATA*)(lector);
         lector += sizeof(struct R_DATA);
  
-        autor[i].rdata = leerHost(lector, buf, &parar);
+        autor[i].rdata = leerHost(lector, buf, &parar, 49152);
         lector += parar;
     }
  
     //Leemos Registros Adicionales (Método)
     for(i=0; i<ntohs(dns_h->arcount); i++)
     {
-        adic[i].name = leerHost(lector, buf, &parar);
+        adic[i].name = leerHost(lector, buf, &parar, 0);
         lector += parar;
  
         adic[i].resource = (struct R_DATA*)(lector);
@@ -305,30 +337,41 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
 	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
 	 
 	            lector = lector + ntohs(adic[i].resource->data_len);
+	            printf("Leemos respuestas Adicionales del tipo A.\n");
 
 	            break;
         	}
         	case 15:	//Si es una consulta de servidor de correo electrónico
         	{
 
-        		printf("Addicional: Es de tipo MX.\n");
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+ 
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	 
+	            lector = lector + ntohs(adic[i].resource->data_len);
+        		printf("Leemos respuestas Adicionales del tipo MX.\n");
 
 	            break;
 
         	}
         	default:
         	{
-            	adic[i].rdata = leerHost(lector, buf, &parar);
+            	adic[i].rdata = leerHost(lector, buf, &parar, 0);
             	lector = lector + parar;
         	}
     	}
     }
 
     //Imprimimos Respuestas
-    printf("\nNumero de Respuestas : %d \n" , ntohs(dns_h->ancount) );
+    printf("\nNúmero de Respuestas : %d \n" , ntohs(dns_h->ancount) );
     for(i=0 ; i < ntohs(dns_h->ancount) ; i++)
     {
-        printf("El Host %s ", resp[i].name);
+        printf("Respuesta %i: El Host %s ", i+1,resp[i].name);
  		
  		tipo = ntohs(resp[i].resource->type);
 
@@ -338,21 +381,27 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
         	{
         		long *p;
            		p = (long*)resp[i].rdata;
-            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	sai.sin_addr.s_addr = (* p);
+
             	printf("tiene como dirección IPv4 : %s\n", inet_ntoa(sai.sin_addr));
         		break;
         	}
         	case 15:	//Si es una consulta de servidor de correo electrónico
         	{
-        		long *p;
-           		p = (long*)resp[i].rdata;
-            	sai.sin_addr.s_addr = (* p); //working without ntohl
-            	printf("tiene como servidor de correo electrónico : %s\n", inet_ntoa(sai.sin_addr));
+        		//struct D_MAIL * sv_mail = (struct D_MAIL *)malloc(ntohs(sizeof(int) + sizeof(unsigned char *)));
+        		//sv_mail->pref = (int) resp[i].rdata[1];
+        		lector = &resp[i].rdata[2];
+        		char * d_mail = leerHost(lector,resp[i].rdata,&parar,0);
+        		//sv_mail->dir = malloc(strlen(d_mail)+1);
+        		//strcpy(sv_mail->dir,d_mail);
+        		printf("tiene como servidor de correo electrónico a %s - Preferencia: %i\n", d_mail,resp[i].rdata[1]);
+        		//free(sv_mail->dir);
+        		//free(sv_mail);
         		break;
         	}
         	default:
         	{
-        		printf("La Localización va aca\n");
+        		printf("Respuesta: La Localización va aca\n");
         	}
         }
         
@@ -363,18 +412,18 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
     printf("\nNúmero de Respuestas Autoritarias : %d \n" , ntohs(dns_h->nscount) );
     for( i=0 ; i < ntohs(dns_h->nscount) ; i++)
     {
-        if(ntohs(autor[i].resource->type)==2)
+        //if(ntohs(autor[i].resource->type)==2)
         {
-        	printf("El Host %s tiene como alias : %s ",autor[i].name,autor[i].rdata);
+        	printf("Autoritativa: El Host %s tiene como alias : %s ",autor[i].name ,autor[i].rdata);
         	printf("\n");
         }
     }
- 
+
     //print additional resource records
     printf("\nNúmero de Respuestas Adicionales : %d \n" , ntohs(dns_h->arcount) );
     for(i=0; i < ntohs(dns_h->arcount) ; i++)
     {
-        printf("Name : %s ",adic[i].name);
+        printf("Adicionales: El Host %s ",adic[i].name);
 
         tipo = ntohs(adic[i].resource->type);
 
@@ -384,24 +433,57 @@ void leerEImprimirRespuestas(struct DNS_HEADER * dns_h, char * buf, struct socka
         	{
         		long *p;
            		p = (long*)adic[i].rdata;
-            	sai.sin_addr.s_addr = (* p); //working without ntohl
+            	sai.sin_addr.s_addr = (* p);
             	printf("tiene como dirección IPv4 : %s\n", inet_ntoa(sai.sin_addr));
         		break;
         	}
         	case 15:	//Si es una consulta de servidor de correo electrónico
         	{
-        		long *p;
-           		p = (long*)adic[i].rdata;
-            	sai.sin_addr.s_addr = (* p); //working without ntohl
-            	printf("tiene como servidor de correo electrónico : %s\n", inet_ntoa(sai.sin_addr));
+        		lector = &adic[i].rdata[2];
+        		char * d_mail = leerHost(lector,adic[i].rdata,&parar,0);
+        		printf("tiene como servidor de correo electrónico a %s - Preferencia: %i\n", d_mail,adic[i].rdata[1]);
+
+        		/*
+        		struct D_MAIL * sv_mail = (struct D_MAIL *)malloc(ntohs(sizeof(int) + sizeof(unsigned char *)));
+        		sv_mail->pref = (int) resp[i].rdata[1];
+        		lector = &resp[i].rdata[2];
+        		char * d_mail = leerHost(lector,resp[i].rdata,&parar);
+        		sv_mail->dir = malloc(strlen(d_mail) + strlen(resp[i].name));
+        		strcat(sv_mail->dir,d_mail);
+        		strcat(sv_mail->dir,resp[i].name);
+        		printf("tiene como servidor de correo electrónico a %s - Preferencia: %i\n", sv_mail->dir,sv_mail->pref);
+        		free(sv_mail->dir);
+        		free(sv_mail);*/
         		break;
         	}
         	default:
         	{
-        		printf("La Localización va aca\n");
+        		printf("Adicionales: La Localización va aca\n");
         	}
         }
     }
+    //-----------------------------------------------------------------------------------------------------------------
+}
+
+/*
+	Método enviar
+*/
+void enviar(int sock,unsigned char buf[], int size, struct sockaddr_in dest)
+{
+	
+}
+
+/*
+	Método recibir
+*/
+void recibir(int sock, unsigned char buf[], struct sockaddr_in dest)
+{
+	
+}
+
+void leerEImprimirRespuestas(struct DNS_HEADER * dns_h,unsigned char buf[], struct sockaddr_in sai, unsigned char * lector)
+{
+	
 }
 
 /*
@@ -438,7 +520,7 @@ void formatoDNS(unsigned char* dns, unsigned char* host)
 	Lee los nombres de Host de formato DNS y los transforma a nombres de Host normales
 	Ejemplo: 2cs3uns3edu2ar0 -> cs.uns.edu.ar
  */
-u_char* leerHost(unsigned char* _lec, unsigned char* _buff, int* _cont)
+u_char* leerHost(unsigned char* _lec, char _buff[], int* _cont, int _desp)
 {
     unsigned char *name;
     unsigned int p = 0, saltar = 0, offset;
@@ -453,7 +535,7 @@ u_char* leerHost(unsigned char* _lec, unsigned char* _buff, int* _cont)
     {
         if(*_lec >= 192)
         {
-            offset = (*_lec)*256 + *(_lec+1) - 49152;	//49152 = 11000000 00000000
+            offset = (*_lec)*256 + *(_lec+1) - _desp;
             _lec = _buff + offset - 1;
             saltar = 1; 								
         }

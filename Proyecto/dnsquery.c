@@ -52,7 +52,6 @@ int puerto=0;
 char* consulta=NULL;
 
 void obtenerHost (char* );
-char* substring(const char*, int, int);
 void get_dns_default();
 void ayuda();
 void ayudaConsulta();
@@ -65,23 +64,6 @@ void ayudaR();
 void ayudaT();
 
 //printfafa(char* cadena, int entreros );
-
-/**
- * Funcion que retorna una subcadena de caracteres de tamaño n, comenzando desde la posicion beg, de 
- * la string str
- * Parametros:
- * char* str - Cadena de caracteres original
- * int beg - Comienzo de subcadena
- * int n - Longitud de subcadena
- * */
-char* substring(const char* str, int beg, int n)
-{
-   char *sub = malloc(n+1); 
-   strncpy(sub, (str + beg), n);
-   *(sub+n) = 0;
-
-   return sub;
-}
 
 /*
  * Procedimiento ayuda
@@ -305,7 +287,7 @@ void main(int argc, char *argv[]) {
 		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", 
 			consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
 
-		consultar(consulta,servidor,puerto,1,recursion);
+		consultar(consulta,servidor,puerto,15,recursion);
 			
 	}
 }

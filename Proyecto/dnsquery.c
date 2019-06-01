@@ -18,6 +18,7 @@
 
 //Constantes -> Codigo de Salida de Errores
 const int IP_INV = 2;
+const int ERR_PARAM = 3;
 #define debug 0
 
 //colores y estilos para printf
@@ -47,13 +48,14 @@ int _mx = 0;
 int _loc = 0;
 int _r = 0;
 int _t = 0;
+int tipo;
 char* servidor=NULL;
 int puerto=0;
 char* consulta=NULL;
 
 void obtenerHost (char* );
 void get_dns_default();
-void ayuda();
+void ayuda(int);
 void ayudaConsulta();
 void ayudaServidor();
 void ayudaPuerto();
@@ -74,8 +76,8 @@ void ayudaT();
  * distintas opciones del programa.
  * 
  */
-void ayuda(){
-		if(cantParametros <= 2){ //<-- lo q es igual a (_r+_a+_t+_loc+_mx==0) && (servidor==NULL && puerto==NULL && consulta==NULL)
+void ayuda(int completa){
+		if(completa){ //<-- lo q es igual a (_r+_a+_t+_loc+_mx==0) && (servidor==NULL && puerto==NULL && consulta==NULL)
 			printf("MODO DE USO: dnsquery consulta @servidor[:puerto] [-a | -mx | -loc] [-r | -t] [-h]\n");
             printf("OPCION\t\t\tDESCRIPCION\n");
 
@@ -218,32 +220,55 @@ void masticarParametros(int argc, char *argv[]){
 	int i=0;
 	char* parametro;
 	cantParametros = argc;
-	//char** restos = malloc(sizeof(char*)*argc); int cantResto = 0;
-	for(i=0; i<argc; i++){
-		if(strcmp(argv[i], "-h")==0){
-			_h = 1;
-		}
-		else if(strcmp(argv[i], "-t")==0){
-			_t = 1;
-		}
-		//else if(strcmp(argv[i], "@")==0){
-		else if(strchr(argv[i], '@')!=NULL){
-			int largo = strlen(argv[i]);
-			int _puer = 1;
-			for(_puer = 1; _puer < largo; _puer++){
-				if(debug) printf("estoy en serv %s\n", argv[i]);
-				if(argv[i][_puer]==':'){
-					char * ret = substring(argv[i], _puer+1, largo);;
-					puerto = (int) strtol(ret, NULL, 10);
-					break;
-				}
+	if((cantParametros>1) && (cantParametros<7))
+	{
+		//char** restos = malloc(sizeof(char*)*argc); int cantResto = 0;
+		for(i=0; i<argc; i++){
+			if(strcmp(argv[i], "-h")==0){
+				_h = 1;
 			}
-			servidor = substring(argv[i], 1, _puer);
-			if(debug)printf("servidor: %s | puerto: %i\n", servidor, puerto);
-			
+			else if(strcmp(argv[i], "-t")==0){
+				_t = 1;
+			}
+			//else if(strcmp(argv[i], "@")==0){
+			else if(strchr(argv[i], '@')!=NULL){
+				int largo = strlen(argv[i]);
+				int _puer = 1;
+				for(_puer = 1; _puer < largo; _puer++){
+					if(debug) printf("estoy en serv %s\n", argv[i]);
+					if(argv[i][_puer]==':'){
+						char * ret = substring(argv[i], _puer+1, largo);;
+						puerto = (int) strtol(ret, NULL, 10);
+						break;
+					}
+				}
+				servidor = substring(argv[i], 1, _puer);
+				if(debug)printf("servidor: %s | puerto: %i\n", servidor, puerto);			
+			}
+			if(strcmp(argv[i], "-a") == 0)
+			{
+				_a = 1;
+				tipo = T_A;
+			}
+			if(strcmp(argv[i], "-mx") == 0)
+			{
+				_mx = 1;
+				tipo = T_MX;
+			}
+			if(strcmp(argv[i], "-loc") == 0)
+			{
+				_loc = 1;
+				tipo = T_LOC;
+			}
+			//else{	restos[cantResto] = argv[i];	}
 		}
-		//else{	restos[cantResto] = argv[i];	}
 	}
+	else
+	{
+		ayuda(1);
+		exit(ERR_PARAM);
+	}
+	
 	
 	//for(i=0; i<argc; i++){ otras opciones }
 	//tiene que seguir
@@ -266,7 +291,7 @@ void main(int argc, char *argv[]) {
 	if((argc==1) || (_h!=0))
 	{
 		//un solo parametro o -h activado
-		ayuda();
+		ayuda(0);
 	}
 	else
 	{
@@ -281,13 +306,22 @@ void main(int argc, char *argv[]) {
 		{
 			recursion = 1;
 		}
+		if ((_loc + _mx + _a)>1)
+		{
+			ayuda(0);
+			exit(ERR_PARAM);
+		}
+		if ((_loc + _mx + _a)==0)
+		{
+			tipo = T_A;	//Por defecto es una consulta tipo -a
+		}
 		//dnsquery <consulta>
 		obtenerHost(argv[1]);
 		
 		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", 
 			consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
 
-		consultar(consulta,servidor,puerto,15,recursion);
+		consultar(consulta,servidor,puerto,tipo,recursion);
 			
 	}
 }

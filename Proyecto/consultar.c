@@ -26,6 +26,8 @@
 #define Err_Rec 2
 #define Sock_Creat 3
 
+static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,1000000,10000000,100000000,1000000000};
+
 //Estructura del Encabezado
 struct DNS_HEADER
 {
@@ -89,6 +91,83 @@ unsigned char* leerHost (unsigned char *, char buf[], int *);
 int convertirAMetros(char n_hex[]);
 void pasarAHexa(int, char n_hex[]);
 int obtenerPos(char);
+int getLatLonAlt(char n_lla[]);
+
+
+/* takes an on-the-wire LOC RR and prints it in zone file
+ * (human readable) format. */
+char *
+loc_ntoa(int i_latval, int i_longval, int i_altval)
+{
+        register char *cp;
+        register const u_char *rcp;
+
+        int latdeg, latmin, latsec, latsecfrac;
+        int longdeg, longmin, longsec, longsecfrac;
+        char northsouth, eastwest;
+        int altmeters, altfrac, altsign;
+
+        const int referencealt = 100000 * 100;
+
+        int32_t latval, longval, altval;
+        unsigned int templ;
+       	
+        templ = 2296524147;
+        latval = (templ - ((unsigned)1<<31));
+
+        templ = 2155336178;
+        longval = (templ - ((unsigned)1<<31));
+
+        templ = 10004700;
+        if (templ < referencealt) { /* below WGS 84 spheroid */
+                altval = referencealt - templ;
+                altsign = -1;
+        } else {
+                altval = templ - referencealt;
+                altsign = 1;
+        }
+
+        if (latval < 0) {
+                northsouth = 'S';
+                latval = -latval;
+        }
+        else
+                northsouth = 'N';
+
+        latsecfrac = latval % 1000;
+        latval = latval / 1000;
+        latsec = latval % 60;
+        latval = latval / 60;
+        latmin = latval % 60;
+        latval = latval / 60;
+        latdeg = latval;
+
+        if (longval < 0) {
+                eastwest = 'W';
+                longval = -longval;
+        }
+        else
+                eastwest = 'E';
+
+        longsecfrac = longval % 1000;
+        longval = longval / 1000;
+        longsec = longval % 60;
+        longval = longval / 60;
+        longmin = longval % 60;
+        longval = longval / 60;
+        longdeg = longval;
+
+        altfrac = altval % 100;
+        altmeters = (altval / 100) * altsign;
+        sprintf(cp,
+                "Latitud: %d dec %.2d min %.2d.%.3d sec | %c\n\t\tLongitud: %d dec %.2d min %.2d.%.3d sec | %c\n\t\tAltura: %d.%.2d m",
+                latdeg, latmin, latsec, latsecfrac, northsouth,
+                longdeg, longmin, longsec, longsecfrac, eastwest,
+                altmeters, altfrac);
+        
+    	return (cp);
+}
+
 
 /**
  * Funcion que retorna una subcadena de caracteres de tamaño n, comenzando desde la posicion beg, de 
@@ -260,9 +339,7 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
 
 	        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
 		            {
-		               	resp[i].rdata[j] = lector[j];
-		               	printf("%i\n", lector[j]);
-		                           
+		               	resp[i].rdata[j] = lector[j];                          
 		            }
 
 		            laux = lector;
@@ -280,18 +357,30 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
 		            pasarAHexa(resp[i].rdata[3],n_hex);
 		            int pv = convertirAMetros(n_hex);
 
+		            char n_lat[8] = {resp[i].rdata[3],resp[i].rdata[4],resp[i].rdata[5],resp[i].rdata[6],
+		            				 resp[i].rdata[7],resp[i].rdata[8],resp[i].rdata[9],resp[i].rdata[10]};
+		            int lat = getLatLonAlt(n_lat);
+		            
+		            char n_lon[8] = {resp[i].rdata[11],resp[i].rdata[12],resp[i].rdata[13],resp[i].rdata[14],
+		            		 resp[i].rdata[15],resp[i].rdata[16],resp[i].rdata[17],resp[i].rdata[18]};
+		            int lon = getLatLonAlt(n_lon);
+		            
+		            char n_alt[8] = {resp[i].rdata[19],resp[i].rdata[20],resp[i].rdata[21],resp[i].rdata[22],
+		            		 resp[i].rdata[23],resp[i].rdata[24],resp[i].rdata[25],resp[i].rdata[26]};
+		            int alt = getLatLonAlt(n_alt);
+
+		            char * respuesta = loc_ntoa(lat,lon,alt);
+		            
 		            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
 		            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", resp[i].rdata[0], t,ph,pv);
-		            printf("\t\tLatitud: %i deg | %i min | %f sec | %c\n",1,1,1.0,'A');
-		            printf("\t\tLongitud: %i deg | %i min | %f sec | %c\n",1,1,1.0,'A');
-		            printf("\t\tAltitud: %i m\n",47);
+		            printf("\t\t%s\n", respuesta);
 					printf("\n");
 		            break;
 
 	        	}
 	        	default:
 	        	{
-	        		printf("Respuesta: %i\n\tNada que hacer.\n",i+1);
+	        		printf("Respuesta: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
 	        	}
 	        }
 	        printf("\n");
@@ -373,13 +462,51 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
 	        	}
 	        	case 29: //Si es una consulta de servidor de Localización Geográfica
 	        	{
-	        						
-		            break;
+	        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
+                    for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+                    {
+                        adic[i].rdata[j] = lector[j];                          
+                    }
+
+                    laux = lector;
+                    laux = &adic[i].rdata[1];
+                    char * d_mail = leerHost(laux,buf,&parar);
+                    
+                    adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+                    lector = lector + ntohs(adic[i].resource->data_len);
+
+                    char n_hex[2];
+                    pasarAHexa(adic[i].rdata[1],n_hex);
+                    int t = convertirAMetros(n_hex);
+                    pasarAHexa(adic[i].rdata[2],n_hex);
+                    int ph = convertirAMetros(n_hex);
+                    pasarAHexa(adic[i].rdata[3],n_hex);
+                    int pv = convertirAMetros(n_hex);
+
+                    char n_lat[8] = {adic[i].rdata[3],adic[i].rdata[4],adic[i].rdata[5],adic[i].rdata[6],
+                                     adic[i].rdata[7],adic[i].rdata[8],adic[i].rdata[9],adic[i].rdata[10]};
+                    int lat = getLatLonAlt(n_lat);
+                    
+                    char n_lon[8] = {adic[i].rdata[11],adic[i].rdata[12],adic[i].rdata[13],adic[i].rdata[14],
+                             adic[i].rdata[15],adic[i].rdata[16],adic[i].rdata[17],adic[i].rdata[18]};
+                    int lon = getLatLonAlt(n_lon);
+                    
+                    char n_alt[8] = {adic[i].rdata[19],adic[i].rdata[20],adic[i].rdata[21],adic[i].rdata[22],
+                             adic[i].rdata[23],adic[i].rdata[24],adic[i].rdata[25],adic[i].rdata[26]};
+                    int alt = getLatLonAlt(n_alt);
+
+	        		char * respuesta = loc_ntoa(lat,lon,alt);
+                    
+                    printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
+                    printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
+                    printf("\t\t%s\n", respuesta);
+                    printf("\n");
+                    break;
 	        	}
 	        	default:
 	        	{
-	        		printf("Adicional: %i\n\tNada que hacer.\n",i+1);
+	        		printf("Adicional: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
 	        	}
 	    	}
 	    }
@@ -387,11 +514,27 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
     }
     else
     {
-
+    	
     }
     exit(0);
 }
-    
+
+int getLatLonAlt(char n_lla[])
+{
+	int a = obtenerPos(n_lla[0]);
+	int b = obtenerPos(n_lla[1]);
+	int c = obtenerPos(n_lla[2]);
+	int d = obtenerPos(n_lla[3]);
+	int e = obtenerPos(n_lla[4]);
+	int f = obtenerPos(n_lla[5]);
+	int g = obtenerPos(n_lla[6]);
+	int h = obtenerPos(n_lla[7]);
+
+	int salida = h+(g*10)+(f*100)+(e*1000)+(d*10000)+(c*100000)+(b*1000000)+(a*10000000);
+	printf("salida %i\n", salida);
+
+	return salida;
+}  
 
 /*
 	Método convertirAMetros
@@ -546,3 +689,5 @@ u_char* leerHost(unsigned char* _lec, char _buff[], int* _cont)
     
     return name;
 }
+
+

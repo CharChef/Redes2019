@@ -92,13 +92,13 @@ typedef struct
 } QUERY;
 
 //Definición de Funciones
-int consultar (unsigned char *, unsigned char *, int, int, int);
+char* consultar (unsigned char *, unsigned char *, int, int, int);
 void formatoDNS (unsigned char *, unsigned char *);
 unsigned char* leerHost (unsigned char *, char buf[], int *);
 int convertirAMetros(char n_hex[]);
 void pasarAHexa(int, char n_hex[]);
 int obtenerPos(char);
-int getLatLonAlt(char n_lla[]);
+unsigned int getLatLonAlt(unsigned int n_lla[]);
 
 
 /* takes an on-the-wire LOC RR and prints it in zone file
@@ -117,20 +117,16 @@ loc_ntoa(int i_latval, int i_longval, int i_altval)
         const int referencealt = 100000 * 100;
 
         int32_t latval, longval, altval;
-        unsigned int templ;
        	
-        templ = 2296524147;
-        latval = (templ - ((unsigned)1<<31));
+        latval = (i_latval - ((unsigned)1<<31));
 
-        templ = 2155336178;
-        longval = (templ - ((unsigned)1<<31));
+        longval = (i_longval - ((unsigned)1<<31));
 
-        templ = 10004700;
-        if (templ < referencealt) { /* below WGS 84 spheroid */
-                altval = referencealt - templ;
+        if (i_altval < referencealt) { /* below WGS 84 spheroid */
+                altval = referencealt - i_altval;
                 altsign = -1;
         } else {
-                altval = templ - referencealt;
+                altval = i_altval - referencealt;
                 altsign = 1;
         }
 
@@ -196,8 +192,9 @@ char* substring(const char* str, int beg, int n)
 /*
  * Método Consultar
  * */
-int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec)
+char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec)
 {
+	//char * salida;
 	unsigned char buf[65536],* qname,* lector, *laux;
     int i , j , parar, tipo, sock;
  
@@ -329,11 +326,29 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	}
         	case T_NS:
         	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	                resp[i].rdata[j] = lector[j];
+	            }
+	 
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(resp[i].resource->data_len);
         		printf("Respuesta %i: Tipo NS\n", i+1);
         		break;
         	}
         	case T_CNAME:
         	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	                resp[i].rdata[j] = lector[j];
+	            }
+	 
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(resp[i].resource->data_len);
         		printf("Respuesta %i: Tipo CNAME\n", i+1);
         		break;
         	}
@@ -359,6 +374,15 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	}
         	case T_AAAA:
         	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	                resp[i].rdata[j] = lector[j];
+	            }
+	 
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(resp[i].resource->data_len);
         		printf("Respuesta %i: Tipo AAAA\n", i+1);
         		break;
         	}
@@ -386,18 +410,15 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
 	            pasarAHexa(resp[i].rdata[3],n_hex);
 	            int pv = convertirAMetros(n_hex);
 
-	            char n_lat[8] = {resp[i].rdata[3],resp[i].rdata[4],resp[i].rdata[5],resp[i].rdata[6],
-	            				 resp[i].rdata[7],resp[i].rdata[8],resp[i].rdata[9],resp[i].rdata[10]};
-	            int lat = getLatLonAlt(n_lat);
+	            unsigned int n_lat[4] = {resp[i].rdata[4],resp[i].rdata[5],resp[i].rdata[6],resp[i].rdata[7]};
+	            unsigned int lat = getLatLonAlt(n_lat);
 	            
-	            char n_lon[8] = {resp[i].rdata[11],resp[i].rdata[12],resp[i].rdata[13],resp[i].rdata[14],
-	            		 resp[i].rdata[15],resp[i].rdata[16],resp[i].rdata[17],resp[i].rdata[18]};
-	            int lon = getLatLonAlt(n_lon);
-	            
-	            char n_alt[8] = {resp[i].rdata[19],resp[i].rdata[20],resp[i].rdata[21],resp[i].rdata[22],
-	            		 resp[i].rdata[23],resp[i].rdata[24],resp[i].rdata[25],resp[i].rdata[26]};
-	            int alt = getLatLonAlt(n_alt);
+	            unsigned int n_lon[4] = {resp[i].rdata[8],resp[i].rdata[9],resp[i].rdata[10],resp[i].rdata[11]};
+	            unsigned int lon = getLatLonAlt(n_lon);
 
+	            unsigned int n_alt[4] = {resp[i].rdata[12],resp[i].rdata[13],resp[i].rdata[14],resp[i].rdata[15]};
+	            unsigned int alt = getLatLonAlt(n_alt);
+	           
 	            char * respuesta = loc_ntoa(lat,lon,alt);
 	            
 	            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
@@ -410,11 +431,10 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	default:
         	{
         		printf("Respuesta: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
-        	}
-        }
-        printf("\n");
-        
+        	};
+        }   
     }
+    printf("\n");
  
     //Leemos Respuestas Autoritativas
     printf("Número de Respuestas Autoritativas: %i\n", ntohs(dns_h->nscount));
@@ -470,11 +490,29 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	}
         	case T_NS:
         	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(adic[i].resource->data_len);
         		printf("Adicional %i: Tipo NS\n", i+1);
         		break;
         	}
         	case T_CNAME:
         	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(adic[i].resource->data_len);
         		printf("Adicional %i: Tipo CNAME\n", i+1);
         		break;
         	}
@@ -501,6 +539,15 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	}
         	case T_AAAA:
         	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(adic[i].resource->data_len);
         		printf("Adicional %i: Tipo AAAA\n", i+1);
         		break;
         	}
@@ -508,44 +555,41 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
         	{
         		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
-                for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
-                {
-                    adic[i].rdata[j] = lector[j];                          
-                }
+        		for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	               	adic[i].rdata[j] = lector[j];                          
+	            }
 
-                laux = lector;
-                laux = &adic[i].rdata[1];
-                char * d_mail = leerHost(laux,buf,&parar);
-                
-                adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
-                lector = lector + ntohs(adic[i].resource->data_len);
+	            laux = lector;
+        		laux = &adic[i].rdata[1];
+        		char * d_mail = leerHost(laux,buf,&parar);
+        		
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(adic[i].resource->data_len);
 
-                char n_hex[2];
-                pasarAHexa(adic[i].rdata[1],n_hex);
-                int t = convertirAMetros(n_hex);
-                pasarAHexa(adic[i].rdata[2],n_hex);
-                int ph = convertirAMetros(n_hex);
-                pasarAHexa(adic[i].rdata[3],n_hex);
-                int pv = convertirAMetros(n_hex);
+	            char n_hex[2];
+	            pasarAHexa(adic[i].rdata[1],n_hex);
+	            int t = convertirAMetros(n_hex);
+	            pasarAHexa(adic[i].rdata[2],n_hex);
+	            int ph = convertirAMetros(n_hex);
+	            pasarAHexa(adic[i].rdata[3],n_hex);
+	            int pv = convertirAMetros(n_hex);
 
-                char n_lat[8] = {adic[i].rdata[3],adic[i].rdata[4],adic[i].rdata[5],adic[i].rdata[6],
-                                 adic[i].rdata[7],adic[i].rdata[8],adic[i].rdata[9],adic[i].rdata[10]};
-                int lat = getLatLonAlt(n_lat);
-                
-                char n_lon[8] = {adic[i].rdata[11],adic[i].rdata[12],adic[i].rdata[13],adic[i].rdata[14],
-                         adic[i].rdata[15],adic[i].rdata[16],adic[i].rdata[17],adic[i].rdata[18]};
-                int lon = getLatLonAlt(n_lon);
-                
-                char n_alt[8] = {adic[i].rdata[19],adic[i].rdata[20],adic[i].rdata[21],adic[i].rdata[22],
-                         adic[i].rdata[23],adic[i].rdata[24],adic[i].rdata[25],adic[i].rdata[26]};
-                int alt = getLatLonAlt(n_alt);
+	            unsigned int n_lat[4] = {adic[i].rdata[4],adic[i].rdata[5],adic[i].rdata[6],adic[i].rdata[7]};
+	            unsigned int lat = getLatLonAlt(n_lat);
+	            
+	            unsigned int n_lon[4] = {adic[i].rdata[8],adic[i].rdata[9],adic[i].rdata[10],adic[i].rdata[11]};
+	            unsigned int lon = getLatLonAlt(n_lon);
 
-        		char * respuesta = loc_ntoa(lat,lon,alt);
-                
-                printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
-                printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
-                printf("\t\t%s\n", respuesta);
-                printf("\n");
+	            unsigned int n_alt[4] = {adic[i].rdata[12],adic[i].rdata[13],adic[i].rdata[14],adic[i].rdata[15]};
+	            unsigned int alt = getLatLonAlt(n_alt);
+
+	            char * respuesta = loc_ntoa(lat,lon,alt);
+	            
+	            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
+	            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
+	            printf("\t\t%s\n", respuesta);
+				printf("\n");
                 break;
         	}
         	default:
@@ -555,23 +599,18 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
     	}
     }
     printf("\n");
+    return 0;
 }
 
-int getLatLonAlt(char n_lla[])
+unsigned int getLatLonAlt(unsigned int n_lla[])
 {
-	int a = obtenerPos(n_lla[0]);
-	int b = obtenerPos(n_lla[1]);
-	int c = obtenerPos(n_lla[2]);
-	int d = obtenerPos(n_lla[3]);
-	int e = obtenerPos(n_lla[4]);
-	int f = obtenerPos(n_lla[5]);
-	int g = obtenerPos(n_lla[6]);
-	int h = obtenerPos(n_lla[7]);
-
-	int salida = h+(g*10)+(f*100)+(e*1000)+(d*10000)+(c*100000)+(b*1000000)+(a*10000000);
-	printf("salida %i\n", salida);
-
-	return salida;
+	unsigned int aux = 0;//(unsigned int)*n_lat;
+    for(int j=0;j<4;j++)
+    {
+    	aux = aux *256 + n_lla[j];
+    	
+    }
+	return aux;
 }  
 
 /*

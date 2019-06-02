@@ -1,16 +1,16 @@
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
+//#include <ctype.h>
+//#include <errno.h>
+//#include <fcntl.h>
 #include <netdb.h>
-#include <resolv.h>
-#include <signal.h>
+//#include <resolv.h>
+//#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+//#include <sys/time.h>
+//#include <sys/types.h>
+//#include <unistd.h>
 #include <arpa/inet.h>
 
 //Incluyo la interface del módulo dns
@@ -19,7 +19,13 @@
 //Constantes -> Codigo de Salida de Errores
 const int IP_INV = 2;
 const int ERR_PARAM = 3;
-#define debug 0
+//#define debug 0
+#define T_A 1
+#define T_NS 2
+#define T_CNAME 5
+#define T_MX 15
+#define T_AAAA 28
+#define T_LOC 29
 
 //colores y estilos para printf
 #define RESET   "\033[0m"
@@ -54,7 +60,7 @@ int puerto=0;
 char* consulta=NULL;
 
 void obtenerHost (char* );
-void desglosar(char *, char **);
+int desglosar(char *, char **);
 void get_dns_default();
 void ayuda(int);
 void ayudaConsulta();
@@ -236,7 +242,7 @@ void masticarParametros(int argc, char *argv[]){
 				int largo = strlen(argv[i]);
 				int _puer = 1;
 				for(_puer = 1; _puer < largo; _puer++){
-					if(debug) printf("estoy en serv %s\n", argv[i]);
+					//if(debug) printf("estoy en serv %s\n", argv[i]);
 					if(argv[i][_puer]==':'){
 						char * ret = substring(argv[i], _puer+1, largo);;
 						puerto = (int) strtol(ret, NULL, 10);
@@ -244,7 +250,7 @@ void masticarParametros(int argc, char *argv[]){
 					}
 				}
 				servidor = substring(argv[i], 1, _puer);
-				if(debug)printf("servidor: %s | puerto: %i\n", servidor, puerto);			
+				//if(debug)printf("servidor: %s | puerto: %i\n", servidor, puerto);			
 			}
 			if(strcmp(argv[i], "-a") == 0)
 			{
@@ -318,30 +324,32 @@ void main(int argc, char *argv[]) {
 		}
 		else
 		{
+			char * aux = malloc(strlen(consulta));
+			strcpy(aux,consulta);
 			char ** partes = malloc(sizeof(char**));
-			desglosar(consulta, partes);
-			for(int i=1;i<strlen((char*)partes);i++)
+			int tamanio = desglosar(aux, &partes[0]);
+			for(int i=0;i<tamanio;i++)
 			{
-				printf("parte %i -> %s\n",i-1,partes[i-1]);
+				printf("parte %i -> %s\n",i,partes[i]);
 			}
 			consultar(consulta,servidor,puerto,tipo,0);
-		}
-		exit(0);	
+		}	
 	}
+	exit(0);
 }
 
-void desglosar(char * consulta, char ** salida)
+int desglosar(char * consul, char ** salida)
 {
-	salida[0] = malloc(strlen(consulta));
-	strcpy(salida[0],consulta);
-	if(strcmp(consulta,".")!=0)
+	int i=0;
+	salida[0] = malloc(strlen(consul)+1);
+	strcpy(salida[0],consul);
+	if(strcmp(consul,".")!=0)
 	{
 		int saltar = 1;
-		char * p;
-		int i = 1;
+		char * p = salida[0];
 		while(saltar)
 		{
-			p = strchr(consulta,'.');
+			p = strchr(consul,'.');
 			if(p == NULL)
 			{
 				saltar = 0;
@@ -349,16 +357,21 @@ void desglosar(char * consulta, char ** salida)
 			}
 			else
 			{
-				salida[i] = malloc(strlen(p + 1));
 				p = p + 1;
+				salida[i] = (char *)malloc(strlen(p));
 				strcpy(salida[i],p);
 				i = i + 1;
-				consulta = p;
+				consul = p;
 			}
 		}
 		salida[i] = ".";
-		salida[i+1] = '\0';
+		i++;
 	}
+	else
+	{
+		i=0;
+	}
+	return i;
 }
 
 /*
@@ -367,18 +380,23 @@ void desglosar(char * consulta, char ** salida)
  */
 void obtenerHost (char* host_argumento){
 	
-	struct hostent *host;
 	
+	struct hostent *host;
+	host = gethostbyname(host_argumento);
+
+	consulta = host_argumento;
+	
+	/*
 	//Recibo un nombre
     if((host = gethostbyname(host_argumento)) != 0)
     {
-		consulta = host_argumento;
+		
 	}
 	else
 	{
 		herror(host_argumento);
 		exit(IP_INV);
-	}
+	}*/
 }
 	
 

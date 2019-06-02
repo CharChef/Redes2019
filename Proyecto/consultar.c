@@ -21,6 +21,13 @@
 #include <sys/types.h>
 #include <math.h>
 
+#define T_A 1
+#define T_NS 2
+#define T_CNAME 5
+#define T_MX 15
+#define T_AAAA 28
+#define T_LOC 29
+
 //Codigo de Errores
 #define Err_Env 1
 #define Err_Rec 2
@@ -237,286 +244,317 @@ int consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_ty
     formatoDNS(qname, host);
 
     qinfo =(struct QUESTION*)&buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname) + 1)]; 
- 
- 	qinfo->qtype = htons(q_type);
+ 	
+ 	if(is_rec)
+ 	{
+ 		qinfo->qtype = htons(q_type);
+ 	}
+ 	else
+ 	{
+ 		qinfo->qtype = htons(T_NS);
+ 	}
+ 	
     qinfo->qclass = htons(1);			//Clase Internet = 1
 
-    if(is_rec)
+    
+	//Envio la consulta
+ 	//----------------------------------------------------------enviar-----------------------------------------------------------
+   	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
     {
-    	//Envio la consulta
-	 	//----------------------------------------------------------enviar-----------------------------------------------------------
-	   	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
-	    {
-	        perror("Error al enviar la consulta.");
-	        exit(Err_Env);
-	    }
-	    else
-	    {
-	    	printf("Consulta Enviada.\n");
-	    }
-	    //---------------------------------------------------------------------------------------------------------------------------
-
-	   	//Recibo las respuestas
-	    //----------------------------------------------------------recibir--------------------------------------------------------
-	    i = sizeof dest;
-		int byte_count;
-	    if(byte_count = recvfrom (sock, (char *) buf, sizeof(buf)-1, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
-	    {
-	        perror("Error al recibir la respuesta");
-	        exit(Err_Rec);
-	    }
-	    else
-	    {
-	    	printf("Respuesta Recibida.\n");
-	    }
-	    //--------------------------------------------------------------------------------------------------------------------------
-	        
-	    dns_h = (struct DNS_HEADER*) buf;
-	 	
-	    lector = &buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION)];
-	    
-	    //Leemos e imprimimos las respuestas
-	   	//---------------------------------------------------------leerImprimir-----------------------------------------------------
-		struct RES_RECORD resp[20], autor[20], adic[20];
-
-		printf("\nNúmero de Respuestas: %i\n", ntohs(dns_h->ancount));
-	    for(i=0; i<ntohs(dns_h->ancount); i++)
-	    {
-	    	resp[i].name = leerHost(lector, buf, &parar);
-			lector = lector + parar;
-
-			resp[i].resource = (struct R_DATA*)(lector);
-			lector = lector + sizeof(struct R_DATA);
-		
-			tipo = ntohs(resp[i].resource->type);
-
-	        switch (tipo)
-	        {
-	        	case 1:	//Si es una consulta de conversión de nombre
-	        	{
-	        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
-
-		            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
-		            {
-		                resp[i].rdata[j] = lector[j];
-		            }
-		 
-		            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
-		            lector = lector + ntohs(resp[i].resource->data_len);
-
-		            long *p;
-	           		p = (long*)resp[i].rdata;
-	            	sai.sin_addr.s_addr = (* p);
-
-	            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, resp[i].name, inet_ntoa(sai.sin_addr));
-	        		printf("\n");
-	        		break;
-
-	        	}
-	        	case 15: //Si es una consulta de servidor de correo electrónico
-	        	{
-	        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
-
-	        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
-		            {
-		               	resp[i].rdata[j] = lector[j];
-		                           
-		            }
-		            laux = lector;
-	        		laux = &resp[i].rdata[2];
-	        		char * d_mail = leerHost(laux,buf,&parar);
-	        			 
-		            lector = lector + ntohs(resp[i].resource->data_len);
-
-	            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
-					printf("\n");	            
-		            break;
-
-	        	}
-	        	case 29: //Si es una consulta de servidor de Localización Geográfica
-	        	{
-	        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
-
-	        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
-		            {
-		               	resp[i].rdata[j] = lector[j];                          
-		            }
-
-		            laux = lector;
-	        		laux = &resp[i].rdata[1];
-	        		char * d_mail = leerHost(laux,buf,&parar);
-	        		
-		            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
-		            lector = lector + ntohs(resp[i].resource->data_len);
-
-		            char n_hex[2];
-		            pasarAHexa(resp[i].rdata[1],n_hex);
-		            int t = convertirAMetros(n_hex);
-		            pasarAHexa(resp[i].rdata[2],n_hex);
-		            int ph = convertirAMetros(n_hex);
-		            pasarAHexa(resp[i].rdata[3],n_hex);
-		            int pv = convertirAMetros(n_hex);
-
-		            char n_lat[8] = {resp[i].rdata[3],resp[i].rdata[4],resp[i].rdata[5],resp[i].rdata[6],
-		            				 resp[i].rdata[7],resp[i].rdata[8],resp[i].rdata[9],resp[i].rdata[10]};
-		            int lat = getLatLonAlt(n_lat);
-		            
-		            char n_lon[8] = {resp[i].rdata[11],resp[i].rdata[12],resp[i].rdata[13],resp[i].rdata[14],
-		            		 resp[i].rdata[15],resp[i].rdata[16],resp[i].rdata[17],resp[i].rdata[18]};
-		            int lon = getLatLonAlt(n_lon);
-		            
-		            char n_alt[8] = {resp[i].rdata[19],resp[i].rdata[20],resp[i].rdata[21],resp[i].rdata[22],
-		            		 resp[i].rdata[23],resp[i].rdata[24],resp[i].rdata[25],resp[i].rdata[26]};
-		            int alt = getLatLonAlt(n_alt);
-
-		            char * respuesta = loc_ntoa(lat,lon,alt);
-		            
-		            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
-		            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", resp[i].rdata[0], t,ph,pv);
-		            printf("\t\t%s\n", respuesta);
-					printf("\n");
-		            break;
-
-	        	}
-	        	default:
-	        	{
-	        		printf("Respuesta: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
-	        	}
-	        }
-	        printf("\n");
-	        
-	    }
-	 
-	    //Leemos Respuestas Autoritativas
-	    printf("Número de Respuestas Autoritativas: %i\n", ntohs(dns_h->nscount));
-	    for(i=0; i<ntohs(dns_h->nscount); i++)
-	    {
-	        autor[i].name = leerHost(lector, buf, &parar);
-	        lector += parar;
-	 
-	        autor[i].resource = (struct R_DATA*)(lector);
-	        lector += sizeof(struct R_DATA);
-	 
-	        autor[i].rdata = leerHost(lector, buf, &parar);
-	        lector += parar;
-
-        	printf("Autoritativa: El Host %s tiene como alias : %s ",autor[i].name ,autor[i].rdata);
-        	printf("\n");
-        
-	    }
-	 
-	    //Leemos Registros Adicionales (Método)
-	    printf("Número de Respuestas Adicionales: %i\n", ntohs(dns_h->arcount));
-	    for(i=0; i<ntohs(dns_h->arcount); i++)
-	    {
-	        adic[i].name = leerHost(lector, buf, &parar);
-	        lector += parar;
-	 
-	        adic[i].resource = (struct R_DATA*)(lector);
-	        lector += sizeof(struct R_DATA);
-	 
-	        tipo = ntohs(adic[i].resource->type);
-
-	        switch (tipo)
-	        {
-	        	case 1:		//Si es una consulta de conversión de nombre
-	        	{
-	        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
-
-		            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
-		            {
-		                adic[i].rdata[j] = lector[j];
-		            }
-		 
-		            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
-		            lector = lector + ntohs(adic[i].resource->data_len);
-
-		            long *p;
-	           		p = (long*)adic[i].rdata;
-	            	sai.sin_addr.s_addr = (* p);
-
-	            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, adic[i].name, inet_ntoa(sai.sin_addr));
-	        		printf("\n");
-	        		break;
-	        	}
-	        	case 15:	//Si es una consulta de servidor de correo electrónico
-	        	{
-
-	        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
-
-	        		for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
-		            {
-		               	adic[i].rdata[j] = lector[j];
-		                           
-		            }
-		            laux = lector;
-	        		laux = &adic[i].rdata[2];
-	        		char * d_mail = leerHost(laux,buf,&parar);
-	        			 
-		            lector = lector + ntohs(adic[i].resource->data_len);
-
-	            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
-	            	printf("\n");           
-		            break;
-
-	        	}
-	        	case 29: //Si es una consulta de servidor de Localización Geográfica
-	        	{
-	        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
-
-                    for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
-                    {
-                        adic[i].rdata[j] = lector[j];                          
-                    }
-
-                    laux = lector;
-                    laux = &adic[i].rdata[1];
-                    char * d_mail = leerHost(laux,buf,&parar);
-                    
-                    adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
-                    lector = lector + ntohs(adic[i].resource->data_len);
-
-                    char n_hex[2];
-                    pasarAHexa(adic[i].rdata[1],n_hex);
-                    int t = convertirAMetros(n_hex);
-                    pasarAHexa(adic[i].rdata[2],n_hex);
-                    int ph = convertirAMetros(n_hex);
-                    pasarAHexa(adic[i].rdata[3],n_hex);
-                    int pv = convertirAMetros(n_hex);
-
-                    char n_lat[8] = {adic[i].rdata[3],adic[i].rdata[4],adic[i].rdata[5],adic[i].rdata[6],
-                                     adic[i].rdata[7],adic[i].rdata[8],adic[i].rdata[9],adic[i].rdata[10]};
-                    int lat = getLatLonAlt(n_lat);
-                    
-                    char n_lon[8] = {adic[i].rdata[11],adic[i].rdata[12],adic[i].rdata[13],adic[i].rdata[14],
-                             adic[i].rdata[15],adic[i].rdata[16],adic[i].rdata[17],adic[i].rdata[18]};
-                    int lon = getLatLonAlt(n_lon);
-                    
-                    char n_alt[8] = {adic[i].rdata[19],adic[i].rdata[20],adic[i].rdata[21],adic[i].rdata[22],
-                             adic[i].rdata[23],adic[i].rdata[24],adic[i].rdata[25],adic[i].rdata[26]};
-                    int alt = getLatLonAlt(n_alt);
-
-	        		char * respuesta = loc_ntoa(lat,lon,alt);
-                    
-                    printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
-                    printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
-                    printf("\t\t%s\n", respuesta);
-                    printf("\n");
-                    break;
-	        	}
-	        	default:
-	        	{
-	        		printf("Adicional: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
-	        	}
-	    	}
-	    }
-	    printf("\n");
+        perror("Error al enviar la consulta.");
+        exit(Err_Env);
     }
     else
     {
-    	
+    	printf("Consulta Enviada.\n");
     }
-    exit(0);
+    //---------------------------------------------------------------------------------------------------------------------------
+
+   	//Recibo las respuestas
+    //----------------------------------------------------------recibir--------------------------------------------------------
+    i = sizeof dest;
+	int byte_count;
+    if(byte_count = recvfrom (sock, (char *) buf, sizeof(buf)-1, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
+    {
+        perror("Error al recibir la respuesta");
+        exit(Err_Rec);
+    }
+    else
+    {
+    	printf("Respuesta Recibida.\n");
+    }
+    //--------------------------------------------------------------------------------------------------------------------------
+        
+    dns_h = (struct DNS_HEADER*) buf;
+ 	
+    lector = &buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname)+1) + sizeof(struct QUESTION)];
+    
+    //Leemos e imprimimos las respuestas
+   	//---------------------------------------------------------leerImprimir-----------------------------------------------------
+	struct RES_RECORD resp[20], autor[20], adic[20];
+
+	printf("\nNúmero de Respuestas: %i\n", ntohs(dns_h->ancount));
+    for(i=0; i<ntohs(dns_h->ancount); i++)
+    {
+    	resp[i].name = leerHost(lector, buf, &parar);
+		lector = lector + parar;
+
+		resp[i].resource = (struct R_DATA*)(lector);
+		lector = lector + sizeof(struct R_DATA);
+	
+		tipo = ntohs(resp[i].resource->type);
+
+        switch (tipo)
+        {
+        	case T_A:	//Si es una consulta de conversión de nombre
+        	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	                resp[i].rdata[j] = lector[j];
+	            }
+	 
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(resp[i].resource->data_len);
+
+	            long *p;
+           		p = (long*)resp[i].rdata;
+            	sai.sin_addr.s_addr = (* p);
+
+            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, resp[i].name, inet_ntoa(sai.sin_addr));
+        		printf("\n");
+        		break;
+
+        	}
+        	case T_NS:
+        	{
+        		printf("Respuesta %i: Tipo NS\n", i+1);
+        		break;
+        	}
+        	case T_CNAME:
+        	{
+        		printf("Respuesta %i: Tipo CNAME\n", i+1);
+        		break;
+        	}
+        	case T_MX: //Si es una consulta de servidor de correo electrónico
+        	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	               	resp[i].rdata[j] = lector[j];
+	                           
+	            }
+	            laux = lector;
+        		laux = &resp[i].rdata[2];
+        		char * d_mail = leerHost(laux,buf,&parar);
+        			 
+	            lector = lector + ntohs(resp[i].resource->data_len);
+
+            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
+				printf("\n");	            
+	            break;
+
+        	}
+        	case T_AAAA:
+        	{
+        		printf("Respuesta %i: Tipo AAAA\n", i+1);
+        		break;
+        	}
+        	case T_LOC: //Si es una consulta de servidor de Localización Geográfica
+        	{
+        		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
+
+        		for(j=0 ; j<ntohs(resp[i].resource->data_len) ; j++)
+	            {
+	               	resp[i].rdata[j] = lector[j];                          
+	            }
+
+	            laux = lector;
+        		laux = &resp[i].rdata[1];
+        		char * d_mail = leerHost(laux,buf,&parar);
+        		
+	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(resp[i].resource->data_len);
+
+	            char n_hex[2];
+	            pasarAHexa(resp[i].rdata[1],n_hex);
+	            int t = convertirAMetros(n_hex);
+	            pasarAHexa(resp[i].rdata[2],n_hex);
+	            int ph = convertirAMetros(n_hex);
+	            pasarAHexa(resp[i].rdata[3],n_hex);
+	            int pv = convertirAMetros(n_hex);
+
+	            char n_lat[8] = {resp[i].rdata[3],resp[i].rdata[4],resp[i].rdata[5],resp[i].rdata[6],
+	            				 resp[i].rdata[7],resp[i].rdata[8],resp[i].rdata[9],resp[i].rdata[10]};
+	            int lat = getLatLonAlt(n_lat);
+	            
+	            char n_lon[8] = {resp[i].rdata[11],resp[i].rdata[12],resp[i].rdata[13],resp[i].rdata[14],
+	            		 resp[i].rdata[15],resp[i].rdata[16],resp[i].rdata[17],resp[i].rdata[18]};
+	            int lon = getLatLonAlt(n_lon);
+	            
+	            char n_alt[8] = {resp[i].rdata[19],resp[i].rdata[20],resp[i].rdata[21],resp[i].rdata[22],
+	            		 resp[i].rdata[23],resp[i].rdata[24],resp[i].rdata[25],resp[i].rdata[26]};
+	            int alt = getLatLonAlt(n_alt);
+
+	            char * respuesta = loc_ntoa(lat,lon,alt);
+	            
+	            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
+	            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", resp[i].rdata[0], t,ph,pv);
+	            printf("\t\t%s\n", respuesta);
+				printf("\n");
+	            break;
+
+        	}
+        	default:
+        	{
+        		printf("Respuesta: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
+        	}
+        }
+        printf("\n");
+        
+    }
+ 
+    //Leemos Respuestas Autoritativas
+    printf("Número de Respuestas Autoritativas: %i\n", ntohs(dns_h->nscount));
+    for(i=0; i<ntohs(dns_h->nscount); i++)
+    {
+        autor[i].name = leerHost(lector, buf, &parar);
+        lector += parar;
+ 
+        autor[i].resource = (struct R_DATA*)(lector);
+        lector += sizeof(struct R_DATA);
+ 
+        autor[i].rdata = leerHost(lector, buf, &parar);
+        lector += parar;
+
+    	printf("Autoritativa: %i\n\tHost: %s\t\tTipo: NS\t\t Alias: %s\n",i,autor[i].name ,autor[i].rdata);
+    	   
+    }
+    printf("\n");
+ 
+    //Leemos Registros Adicionales (Método)
+    printf("Número de Respuestas Adicionales: %i\n", ntohs(dns_h->arcount));
+    for(i=0; i<ntohs(dns_h->arcount); i++)
+    {
+        adic[i].name = leerHost(lector, buf, &parar);
+        lector += parar;
+ 
+        adic[i].resource = (struct R_DATA*)(lector);
+        lector += sizeof(struct R_DATA);
+ 
+        tipo = ntohs(adic[i].resource->type);
+
+        switch (tipo)
+        {
+        	case T_A:		//Si es una consulta de conversión de nombre
+        	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+	            for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	                adic[i].rdata[j] = lector[j];
+	            }
+	 
+	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+	            lector = lector + ntohs(adic[i].resource->data_len);
+
+	            long *p;
+           		p = (long*)adic[i].rdata;
+            	sai.sin_addr.s_addr = (* p);
+
+            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, adic[i].name, inet_ntoa(sai.sin_addr));
+        		printf("\n");
+        		break;
+        	}
+        	case T_NS:
+        	{
+        		printf("Adicional %i: Tipo NS\n", i+1);
+        		break;
+        	}
+        	case T_CNAME:
+        	{
+        		printf("Adicional %i: Tipo CNAME\n", i+1);
+        		break;
+        	}
+			case T_MX:	//Si es una consulta de servidor de correo electrónico
+        	{
+
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+        		for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+	            {
+	               	adic[i].rdata[j] = lector[j];
+	                           
+	            }
+	            laux = lector;
+        		laux = &adic[i].rdata[2];
+        		char * d_mail = leerHost(laux,buf,&parar);
+        			 
+	            lector = lector + ntohs(adic[i].resource->data_len);
+
+            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
+            	printf("\n");           
+	            break;
+
+        	}
+        	case T_AAAA:
+        	{
+        		printf("Adicional %i: Tipo AAAA\n", i+1);
+        		break;
+        	}
+        	case T_LOC: //Si es una consulta de servidor de Localización Geográfica
+        	{
+        		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
+
+                for(j=0 ; j<ntohs(adic[i].resource->data_len) ; j++)
+                {
+                    adic[i].rdata[j] = lector[j];                          
+                }
+
+                laux = lector;
+                laux = &adic[i].rdata[1];
+                char * d_mail = leerHost(laux,buf,&parar);
+                
+                adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
+                lector = lector + ntohs(adic[i].resource->data_len);
+
+                char n_hex[2];
+                pasarAHexa(adic[i].rdata[1],n_hex);
+                int t = convertirAMetros(n_hex);
+                pasarAHexa(adic[i].rdata[2],n_hex);
+                int ph = convertirAMetros(n_hex);
+                pasarAHexa(adic[i].rdata[3],n_hex);
+                int pv = convertirAMetros(n_hex);
+
+                char n_lat[8] = {adic[i].rdata[3],adic[i].rdata[4],adic[i].rdata[5],adic[i].rdata[6],
+                                 adic[i].rdata[7],adic[i].rdata[8],adic[i].rdata[9],adic[i].rdata[10]};
+                int lat = getLatLonAlt(n_lat);
+                
+                char n_lon[8] = {adic[i].rdata[11],adic[i].rdata[12],adic[i].rdata[13],adic[i].rdata[14],
+                         adic[i].rdata[15],adic[i].rdata[16],adic[i].rdata[17],adic[i].rdata[18]};
+                int lon = getLatLonAlt(n_lon);
+                
+                char n_alt[8] = {adic[i].rdata[19],adic[i].rdata[20],adic[i].rdata[21],adic[i].rdata[22],
+                         adic[i].rdata[23],adic[i].rdata[24],adic[i].rdata[25],adic[i].rdata[26]};
+                int alt = getLatLonAlt(n_alt);
+
+        		char * respuesta = loc_ntoa(lat,lon,alt);
+                
+                printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
+                printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
+                printf("\t\t%s\n", respuesta);
+                printf("\n");
+                break;
+        	}
+        	default:
+        	{
+        		printf("Adicional: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
+        	}
+    	}
+    }
+    printf("\n");
 }
 
 int getLatLonAlt(char n_lla[])

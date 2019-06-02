@@ -54,6 +54,7 @@ int puerto=0;
 char* consulta=NULL;
 
 void obtenerHost (char* );
+void desglosar(char *, char **);
 void get_dns_default();
 void ayuda(int);
 void ayudaConsulta();
@@ -295,17 +296,8 @@ void main(int argc, char *argv[]) {
 	}
 	else
 	{
-		int recursion;
 		if(servidor==NULL) get_dns_default();
 		if(puerto==0) puerto=53;
-		if(_t==1)
-		{
-			recursion = 0;
-		}
-		else
-		{
-			recursion = 1;
-		}
 		if ((_loc + _mx + _a)>1)
 		{
 			ayuda(0);
@@ -318,11 +310,54 @@ void main(int argc, char *argv[]) {
 		//dnsquery <consulta>
 		obtenerHost(argv[1]);
 		
-		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\nRecursion = %i\n\n", 
-			consulta, strlen(consulta), servidor, strlen(servidor),puerto, recursion );
+		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\n\n", 
+			consulta, strlen(consulta), servidor, strlen(servidor),puerto );
+		if(_t==0)
+		{
+			consultar(consulta,servidor,puerto,tipo,1);
+		}
+		else
+		{
+			char ** partes = malloc(sizeof(char**));
+			desglosar(consulta, partes);
+			for(int i=1;i<strlen((char*)partes);i++)
+			{
+				printf("parte %i -> %s\n",i-1,partes[i-1]);
+			}
+			consultar(consulta,servidor,puerto,tipo,0);
+		}
+		exit(0);	
+	}
+}
 
-		consultar(consulta,servidor,puerto,tipo,recursion);
-			
+void desglosar(char * consulta, char ** salida)
+{
+	salida[0] = malloc(strlen(consulta));
+	strcpy(salida[0],consulta);
+	if(strcmp(consulta,".")!=0)
+	{
+		int saltar = 1;
+		char * p;
+		int i = 1;
+		while(saltar)
+		{
+			p = strchr(consulta,'.');
+			if(p == NULL)
+			{
+				saltar = 0;
+				break;
+			}
+			else
+			{
+				salida[i] = malloc(strlen(p + 1));
+				p = p + 1;
+				strcpy(salida[i],p);
+				i = i + 1;
+				consulta = p;
+			}
+		}
+		salida[i] = ".";
+		salida[i+1] = '\0';
 	}
 }
 
@@ -377,70 +412,5 @@ void get_dns_default()
         }
     }
     
-}
-		/*
-		int i;
-		for (i=0; i<argc; i++)
-		{	
-			if(strcmp(argv[i],"-h")==0)
-			{
-				//encontro un -h en algun lugar
-				help = 1;
-				break;
-			}
-		}
-		if(help==1) 
-		{ 
-			// -h
-			ayuda();
-		}
-		else
-		{
-			if(argc==2)
-			{
-				//apuertos <ip>
-				obtenerIP(argv[1]);
-				//analizar() <- debe verificar que el ip sea valido
-				analizar(ip_Host,1,1024);
-			}
-			else
-			{
-				if(strcmp(argv[2],"-r")==0)
-				{
-					//hay mas de 2 argumentos
-					if(argv[3] != NULL)
-					{
-						//apuertos <ip> -r <LP::HP>
-						if(obtenerLH(argv[3])==0)
-						{
-							//obtengo el <ip>
-							obtenerIP(argv[1]);
-							//llama a analizar(ip,lp,hp)
-							analizar(ip_Host,lp,hp);
-						}
-						else
-						{
-							//Error en el rango
-							printf("RANGO_INV: Rango invalido");
-							exit(RANGO_INV);
-						}						
-					}
-					else
-					{
-						//apuertos <ip> -r
-						ayuda();
-						printf("PARAM_INV: Error de parametros");						
-						exit(PARAM_INV);
-					}
-				}
-				else
-				{
-					//apuertos <ip> <cualquier otra cosa>
-					ayuda();
-					printf("PARAM_INV: Error de parametros");
-					exit(PARAM_INV);
-				}
-			}	
-		}
-		*/	
+}	
 

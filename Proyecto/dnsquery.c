@@ -1,4 +1,4 @@
-//#include <ctype.h>
+#include <ctype.h>		//isDigit
 //#include <errno.h>
 //#include <fcntl.h>
 #include <netdb.h>
@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 //#include <sys/time.h>
 //#include <sys/types.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 
 //Incluyo la interface del módulo dns
@@ -276,9 +276,6 @@ void masticarParametros(int argc, char *argv[]){
 		exit(ERR_PARAM);
 	}
 	
-	
-	//for(i=0; i<argc; i++){ otras opciones }
-	//tiene que seguir
 }
 
 /*
@@ -313,26 +310,71 @@ void main(int argc, char *argv[]) {
 		{
 			tipo = T_A;	//Por defecto es una consulta tipo -a
 		}
+
 		//dnsquery <consulta>
 		obtenerHost(argv[1]);
 		
-		printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\n\n", 
-			consulta, strlen(consulta), servidor, strlen(servidor),puerto );
+		//printf("\nConsulta = %s (%li)\nServidor DNS = %s(%li)\nPuerto = %i\n\n", 
+		//	consulta, strlen(consulta), servidor, strlen(servidor),puerto );
+		
 		if(_t==0)
 		{
-			consultar(consulta,servidor,puerto,tipo,1);
+			printf("\n=====================================Consulta=====================================\n");
+			printf("Host: %s\t@%s[:%i]\tTipo: %i\t[Recursiva]\n\n",consulta,servidor,puerto,tipo);
+			consultar(consulta,servidor,puerto,tipo,1,1);
+			printf("\n==================================================================================\n");
 		}
 		else
 		{
-			char * aux = malloc(strlen(consulta));
-			strcpy(aux,consulta);
-			char ** partes = malloc(sizeof(char**));
-			int tamanio = desglosar(aux, &partes[0]);
-			for(int i=0;i<tamanio;i++)
+			if (strcmp(consulta,".")==0)
 			{
-				printf("parte %i -> %s\n",i,partes[i]);
+				printf("\n=====================================Consulta=====================================\n");
+				printf("Host: %s\t@%s [:%i]\tTipo: %i\t[Iterativa]\n\n",consulta,servidor,puerto,tipo);
+				consultar(consulta,servidor,puerto,tipo,0,1);
+				printf("\n==================================================================================\n");
 			}
-			consultar(consulta,servidor,puerto,tipo,0);
+			else
+			{
+				printf("\n=====================================Consulta=====================================\n");
+				printf("Host: %s\t@%s [:%i]\tTipo: %i\t[Iterativa]\n\n",consulta,servidor,puerto,tipo);
+				char * aux = malloc(strlen(consulta));
+				strcpy(aux,consulta);
+				char ** partes = malloc(sizeof(char**));
+				int tamanio = desglosar(aux, &partes[0]);
+				char * sv;
+				int i;
+				int j = tamanio-1;
+				for(i = j;i>-1;i--)
+				{
+					printf("\n----------------------------------Consulta Previa---------------------------------\n");
+					printf("Host: %s\t@%s [:%i]\tTipo: %i\n\n",partes[i],servidor,puerto,tipo);
+					sv = consultar(partes[i],servidor,puerto,tipo,0,1);
+					
+					if(isdigit(sv[0])==0)
+					{
+						//printf("Entre\n");
+						sv = consultar(sv,servidor,puerto,T_A,1,0);
+					}
+
+					if(sv != NULL)
+					{
+						servidor = malloc(strlen(sv));
+						strcpy(servidor,sv);
+					}
+					printf("\n----------------------------------------------------------------------------------\n");
+				}
+				
+				if(isdigit(servidor[0])==0)
+				{
+					//printf("Entre\n");
+					servidor = consultar(sv,servidor,puerto,T_A,1,0);
+				}
+				printf("\n---------------------------------Consulta Final----------------------------------\n");
+				printf("Host: %s\t@%s [:%i]\tTipo: %i\t[Iterativa]\n",consulta,servidor,puerto,tipo);
+				consultar(consulta,servidor,puerto,tipo,1,1);
+				printf("\n==================================================================================\n");
+			}
+						
 		}	
 	}
 	exit(0);
@@ -378,25 +420,11 @@ int desglosar(char * consul, char ** salida)
  * 
  * 
  */
-void obtenerHost (char* host_argumento){
-	
-	
+void obtenerHost (char* host_argumento)
+{
 	struct hostent *host;
 	host = gethostbyname(host_argumento);
-
 	consulta = host_argumento;
-	
-	/*
-	//Recibo un nombre
-    if((host = gethostbyname(host_argumento)) != 0)
-    {
-		
-	}
-	else
-	{
-		herror(host_argumento);
-		exit(IP_INV);
-	}*/
 }
 	
 
@@ -426,7 +454,7 @@ void get_dns_default()
             //y asi anda a la pelusha
             int Longitud = strlen(p);
             //servidor = substring(p,0,10);
-            servidor = substring(p,0,strlen(p));            
+            servidor = substring(p,0,strlen(p)-1);            
         }
     }
     

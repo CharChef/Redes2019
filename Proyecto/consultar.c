@@ -92,11 +92,11 @@ typedef struct
 } QUERY;
 
 //Definición de Funciones
-char* consultar (unsigned char *, unsigned char *, int, int, int);
+char * consultar (unsigned char *, unsigned char *, int, int, int, int);
 void formatoDNS (unsigned char *, unsigned char *);
 unsigned char* leerHost (unsigned char *, char buf[], int *);
-int convertirAMetros(char n_hex[]);
-void pasarAHexa(int, char n_hex[]);
+int convertirAMetros(int n_hex[]);
+void pasarAHexa(int, int n_hex[]);
 int obtenerPos(char);
 unsigned int getLatLonAlt(unsigned int n_lla[]);
 
@@ -106,8 +106,8 @@ unsigned int getLatLonAlt(unsigned int n_lla[]);
 char *
 loc_ntoa(int i_latval, int i_longval, int i_altval)
 {
-        register char *cp;
-        register const u_char *rcp;
+        char *cp;
+        const u_char *rcp;
 
         int latdeg, latmin, latsec, latsecfrac;
         int longdeg, longmin, longsec, longsecfrac;
@@ -162,11 +162,14 @@ loc_ntoa(int i_latval, int i_longval, int i_altval)
 
         altfrac = altval % 100;
         altmeters = (altval / 100) * altsign;
-        sprintf(cp,
+        
+        cp = malloc(2048);
+        	sprintf(cp,
                 "Latitud: %d dec %.2d min %.2d.%.3d sec | %c\n\t\tLongitud: %d dec %.2d min %.2d.%.3d sec | %c\n\t\tAltura: %d.%.2d m",
                 latdeg, latmin, latsec, latsecfrac, northsouth,
                 longdeg, longmin, longsec, longsecfrac, eastwest,
                 altmeters, altfrac);
+        
         
     	return (cp);
 }
@@ -192,9 +195,11 @@ char* substring(const char* str, int beg, int n)
 /*
  * Método Consultar
  * */
-char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec)
+char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec, int modoPrint)
 {
-	//char * salida;
+	char * salidaIP = NULL;
+	char * salidaAddr = NULL;
+	
 	unsigned char buf[65536],* qname,* lector, *laux;
     int i , j , parar, tipo, sock;
  
@@ -205,18 +210,17 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     
     if((sock = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP)) < 0)
 	{
-   		perror("Error al crear el socket");
+   		perror("- Error al crear el socket -");
 		exit(Sock_Creat);
 	}
 	else
 	{
-		printf("Socket creado correctamente.\n");
+		if(modoPrint)  	printf("- Socket creado correctamente -\n");
 	}
 
     dest.sin_family = AF_INET;
     dest.sin_port = htons(n_port);
     dest.sin_addr.s_addr = inet_addr(ip_dns);
- 
     //Seteamos la estructura del encabezado DNS como una consulta estandar
     dns_h = (struct DNS_HEADER *) &buf;
  
@@ -235,11 +239,16 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     dns_h->ancount = 0;
     dns_h->nscount = 0;
     dns_h->arcount = 0;
-
+    
     qname = (unsigned char *) &buf[sizeof(struct DNS_HEADER)];
  	
-    formatoDNS(qname, host);
-
+ 	if(strcmp(host,".")==0)
+ 	{}
+ 	else
+ 	{
+ 		formatoDNS(qname, host);
+  	}
+ 	   
     qinfo =(struct QUESTION*)&buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname) + 1)]; 
  	
  	if(is_rec)
@@ -250,20 +259,19 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
  	{
  		qinfo->qtype = htons(T_NS);
  	}
- 	
-    qinfo->qclass = htons(1);			//Clase Internet = 1
 
-    
-	//Envio la consulta
+ 	qinfo->qclass = htons(1);			//Clase Internet = 1
+ 
+ 	//Envio la consulta
  	//----------------------------------------------------------enviar-----------------------------------------------------------
    	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
     {
-        perror("Error al enviar la consulta.");
+        perror("- Error al enviar la consulta -");
         exit(Err_Env);
     }
     else
     {
-    	printf("Consulta Enviada.\n");
+		if(modoPrint)  	printf("- Consulta enviada -\n");
     }
     //---------------------------------------------------------------------------------------------------------------------------
 
@@ -273,12 +281,12 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	int byte_count;
     if(byte_count = recvfrom (sock, (char *) buf, sizeof(buf)-1, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
     {
-        perror("Error al recibir la respuesta");
+        perror("- Error al recibir la respuesta -");
         exit(Err_Rec);
     }
     else
     {
-    	printf("Respuesta Recibida.\n");
+    	if(modoPrint)  	printf("- Respuesta recibida -\n");
     }
     //--------------------------------------------------------------------------------------------------------------------------
         
@@ -290,7 +298,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
    	//---------------------------------------------------------leerImprimir-----------------------------------------------------
 	struct RES_RECORD resp[20], autor[20], adic[20];
 
-	printf("\nNúmero de Respuestas: %i\n", ntohs(dns_h->ancount));
+	if(modoPrint)  	printf("\nNúmero de Respuestas [Rt]: %i\n", ntohs(dns_h->ancount));
     for(i=0; i<ntohs(dns_h->ancount); i++)
     {
     	resp[i].name = leerHost(lector, buf, &parar);
@@ -319,8 +327,13 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
            		p = (long*)resp[i].rdata;
             	sai.sin_addr.s_addr = (* p);
 
-            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, resp[i].name, inet_ntoa(sai.sin_addr));
-        		printf("\n");
+            	if(salidaIP == NULL)
+        		{
+        			salidaIP = malloc(ntohs(resp[i].resource->data_len));
+        			strcpy(salidaIP,inet_ntoa(sai.sin_addr));
+        		}
+
+            	if(modoPrint)  	printf("[Rt%i]\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s\n", i+1, resp[i].name, inet_ntoa(sai.sin_addr));
         		break;
 
         	}
@@ -332,10 +345,19 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            {
 	                resp[i].rdata[j] = lector[j];
 	            }
+	            
+	            laux = &resp[i].rdata[0];
+        		char * d_sv = leerHost(laux,buf,&parar);
+        		
+        		if(salidaAddr == NULL)
+        		{
+        			salidaAddr = malloc(strlen(d_sv));
+        			strcpy(salidaAddr,d_sv);
+        		}
 	 
 	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(resp[i].resource->data_len);
-        		printf("Respuesta %i: Tipo NS\n", i+1);
+        		if(modoPrint)  	printf("[Rt%i]\tHost: %s\t\t Tipo de respuesta: NS\t\tServidor: %s\n", i+1, host, d_sv);
         		break;
         	}
         	case T_CNAME:
@@ -349,7 +371,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	 
 	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(resp[i].resource->data_len);
-        		printf("Respuesta %i: Tipo CNAME\n", i+1);
+        		if(modoPrint)  	printf("[Rt%i]\tTipo CNAME\n", i+1);
         		break;
         	}
         	case T_MX: //Si es una consulta de servidor de correo electrónico
@@ -361,14 +383,13 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	               	resp[i].rdata[j] = lector[j];
 	                           
 	            }
-	            laux = lector;
+	            
         		laux = &resp[i].rdata[2];
         		char * d_mail = leerHost(laux,buf,&parar);
         			 
 	            lector = lector + ntohs(resp[i].resource->data_len);
 
-            	printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
-				printf("\n");	            
+            	if(modoPrint)  	printf("[Rt%i]\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);            
 	            break;
 
         	}
@@ -383,7 +404,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	 
 	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(resp[i].resource->data_len);
-        		printf("Respuesta %i: Tipo AAAA\n", i+1);
+        		if(modoPrint)  	printf("[Rt%i]\tTipo AAAA\n", i+1);
         		break;
         	}
         	case T_LOC: //Si es una consulta de servidor de Localización Geográfica
@@ -395,14 +416,13 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	               	resp[i].rdata[j] = lector[j];                          
 	            }
 
-	            laux = lector;
         		laux = &resp[i].rdata[1];
         		char * d_mail = leerHost(laux,buf,&parar);
         		
 	            resp[i].rdata[ntohs(resp[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(resp[i].resource->data_len);
 
-	            char n_hex[2];
+	            int n_hex[2];
 	            pasarAHexa(resp[i].rdata[1],n_hex);
 	            int t = convertirAMetros(n_hex);
 	            pasarAHexa(resp[i].rdata[2],n_hex);
@@ -421,23 +441,22 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	           
 	            char * respuesta = loc_ntoa(lat,lon,alt);
 	            
-	            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
-	            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", resp[i].rdata[0], t,ph,pv);
-	            printf("\t\t%s\n", respuesta);
-				printf("\n");
+	            if(modoPrint)  	printf("[Rt%i]\tHost: %s\t Tipo de respuesta: LOC\n", i+1, resp[i].name);
+	            if(modoPrint)  	printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", resp[i].rdata[0], t,ph,pv);
+	            if(modoPrint)  	printf("\t\t%s\n", respuesta);
 	            break;
 
         	}
         	default:
         	{
-        		printf("Respuesta: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
+        		if(modoPrint)  	printf("[Rt%i]\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
         	};
         }   
     }
     printf("\n");
- 
+    
     //Leemos Respuestas Autoritativas
-    printf("Número de Respuestas Autoritativas: %i\n", ntohs(dns_h->nscount));
+    if(modoPrint)  	printf("Número de Respuestas Autoritativas [At]: %i\n", ntohs(dns_h->nscount));
     for(i=0; i<ntohs(dns_h->nscount); i++)
     {
         autor[i].name = leerHost(lector, buf, &parar);
@@ -445,17 +464,23 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
  
         autor[i].resource = (struct R_DATA*)(lector);
         lector += sizeof(struct R_DATA);
- 
+ 		
         autor[i].rdata = leerHost(lector, buf, &parar);
         lector += parar;
 
-    	printf("Autoritativa: %i\n\tHost: %s\t\tTipo: NS\t\t Alias: %s\n",i,autor[i].name ,autor[i].rdata);
+        if(salidaAddr == NULL)
+        {
+        	salidaAddr = malloc(ntohs(autor[i].resource->data_len));
+        	strcpy(salidaAddr,autor[i].rdata);
+        }
+
+    	if(modoPrint)  	printf("[At%i]\tHost: %s\t\tTipo: NS\t\t Alias: %s\n",i,autor[i].name ,autor[i].rdata);
     	   
     }
-    printf("\n");
+    if(modoPrint)  	printf("\n");
  
     //Leemos Registros Adicionales (Método)
-    printf("Número de Respuestas Adicionales: %i\n", ntohs(dns_h->arcount));
+    if(modoPrint)  	printf("Número de Respuestas Adicionales [Ad]: %i\n", ntohs(dns_h->arcount));
     for(i=0; i<ntohs(dns_h->arcount); i++)
     {
         adic[i].name = leerHost(lector, buf, &parar);
@@ -484,8 +509,13 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
            		p = (long*)adic[i].rdata;
             	sai.sin_addr.s_addr = (* p);
 
-            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s", i+1, adic[i].name, inet_ntoa(sai.sin_addr));
-        		printf("\n");
+            	if(salidaIP == NULL)
+        		{
+        			salidaIP = malloc(ntohs(adic[i].resource->data_len));
+        			strcpy(salidaIP,inet_ntoa(sai.sin_addr));
+        		}
+
+            	if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s\n", i+1, adic[i].name, inet_ntoa(sai.sin_addr));
         		break;
         	}
         	case T_NS:
@@ -496,10 +526,19 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            {
 	                adic[i].rdata[j] = lector[j];
 	            }
+	            
+	            laux = &adic[i].rdata[0];
+        		char * d_sv = leerHost(laux,buf,&parar);
+        		
+        		if(salidaAddr == NULL)
+        		{
+        			salidaAddr = malloc(strlen(d_sv));
+        			strcpy(salidaAddr,d_sv);
+        		}
 	 
 	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(adic[i].resource->data_len);
-        		printf("Adicional %i: Tipo NS\n", i+1);
+        		if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: NS\t\tServidor: %s\n", i+1, adic[i].name, d_sv);
         		break;
         	}
         	case T_CNAME:
@@ -513,7 +552,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	 
 	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(adic[i].resource->data_len);
-        		printf("Adicional %i: Tipo CNAME\n", i+1);
+        		if(modoPrint)  	printf("[Ad%i]\tTipo CNAME\n", i+1);
         		break;
         	}
 			case T_MX:	//Si es una consulta de servidor de correo electrónico
@@ -532,8 +571,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
         			 
 	            lector = lector + ntohs(adic[i].resource->data_len);
 
-            	printf("Adicional: %i\n\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);
-            	printf("\n");           
+            	if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: MX\t\tServidor Mail: %s [%i]\n", i+1, resp[i].name, d_mail,resp[i].rdata[1]);          
 	            break;
 
         	}
@@ -548,7 +586,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	 
 	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(adic[i].resource->data_len);
-        		printf("Adicional %i: Tipo AAAA\n", i+1);
+        		if(modoPrint)  	printf("[Ad%i]\tTipo AAAA\n", i+1);
         		break;
         	}
         	case T_LOC: //Si es una consulta de servidor de Localización Geográfica
@@ -567,7 +605,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            adic[i].rdata[ntohs(adic[i].resource->data_len)] = '\0';
 	            lector = lector + ntohs(adic[i].resource->data_len);
 
-	            char n_hex[2];
+	            int n_hex[2];
 	            pasarAHexa(adic[i].rdata[1],n_hex);
 	            int t = convertirAMetros(n_hex);
 	            pasarAHexa(adic[i].rdata[2],n_hex);
@@ -586,20 +624,27 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 
 	            char * respuesta = loc_ntoa(lat,lon,alt);
 	            
-	            printf("Respuesta: %i\n\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
-	            printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
-	            printf("\t\t%s\n", respuesta);
-				printf("\n");
+	            if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: LOC\n", i+1, adic[i].name);
+	            if(modoPrint)  	printf("\tDatos:\tVersión: %i\n\t\tTamaño: %i m\n\t\tPresición Horizontal: %i m\n\t\tPresición Vertical: %i m\n", adic[i].rdata[0], t,ph,pv);
+	            if(modoPrint)  	printf("\t\t%s\n", respuesta);
                 break;
         	}
         	default:
         	{
-        		printf("Adicional: %i\n\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
+        		if(modoPrint)  	printf("[Ad%i]\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
         	}
     	}
     }
-    printf("\n");
-    return 0;
+    if(modoPrint)  	printf("\n");
+
+    if(salidaIP!=NULL)
+    {
+    	return salidaIP;
+    }
+    else
+    {
+    	return salidaAddr;
+    }
 }
 
 unsigned int getLatLonAlt(unsigned int n_lla[])
@@ -621,40 +666,13 @@ unsigned int getLatLonAlt(unsigned int n_lla[])
 	Ejemplo: cs.uns.edu.ar -> 2cs3uns3edu2ar0
 
  */
-int convertirAMetros(char n_hex[]) 
+int convertirAMetros(int n_hex[]) 
 {
-	int x = obtenerPos(n_hex[0]);
-	int y = obtenerPos(n_hex[1]);
-    
-    int salida = (x*pow(10,y))/100;
+    int salida = (n_hex[0]*pow(10,n_hex[1]))/100;
     
     return salida;
 }
 
-int obtenerPos(char c)
-{
-	int salida = 0;
-	switch(c)
-	{
-		case '0':{ salida = 0; break; }
-		case '1':{ salida = 1; break; }
-		case '2':{ salida = 2; break; }
-		case '3':{ salida = 3; break; }
-		case '4':{ salida = 4; break; }
-		case '5':{ salida = 5; break; }
-		case '6':{ salida = 6; break; }
-		case '7':{ salida = 7; break; }
-		case '8':{ salida = 8; break; }
-		case '9':{ salida = 9; break; }
-		case 'A':{ salida = 10; break; }
-		case 'B':{ salida = 11; break; }
-		case 'C':{ salida = 12; break; }
-		case 'D':{ salida = 13; break; }
-		case 'E':{ salida = 14; break; }
-		case 'F':{ salida = 15; break; }
-	}
-	return salida;
-}
 
 /*
 	Método pasarAHexa
@@ -664,18 +682,10 @@ int obtenerPos(char c)
 	Ejemplo: cs.uns.edu.ar -> 2cs3uns3edu2ar0
 
  */
-void pasarAHexa(int entero, char n_hex[]) 
+void pasarAHexa(int entero, int n_hex[]) 
 {
-	char hexa[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-    int i = 1;
-    while(entero >= 16)
-    {
-    	n_hex[i] = (char) hexa[entero%16];
-    	entero = entero/16;
-    	i--;
-    }
-   
-    n_hex[i] = (char) hexa[entero];
+	n_hex[0] = entero / 16;
+	n_hex[1] = entero % 16; 
 }
 
 /*

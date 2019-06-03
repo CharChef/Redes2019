@@ -1,4 +1,7 @@
 /*
+	Redes de Computadoras - 2019
+	Proyecto: Mini-Cliente de Consultas de Servidores DNS
+
 	consultar.c
 
 	Se encarga de realizar la conexión mediante socket al servidor DNS, realiza la consulta
@@ -21,6 +24,7 @@
 #include <sys/types.h>
 #include <math.h>
 
+//Definimos los Tipos Soportados
 #define T_A 1
 #define T_NS 2
 #define T_CNAME 5
@@ -28,11 +32,12 @@
 #define T_AAAA 28
 #define T_LOC 29
 
-//Codigo de Errores
-#define Err_Env 1
-#define Err_Rec 2
-#define Sock_Creat 3
+//Constantes -> Codigo de Errores
+const int ERR_ENV = 2;
+const int ERR_REC = 3;
+const int ERR_SOCK_CREAT = 4;
 
+//Estructura Utilizada por el Procedimiento loc_ntoa
 static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,1000000,10000000,100000000,1000000000};
 
 //Estructura del Encabezado
@@ -65,7 +70,7 @@ struct QUESTION
     unsigned short qclass;		//Clase de Consulta
 };
 
-//-------------------------------------------REVISAR-----------------------------------------------------------
+//Etructura de Datos de las Respuestas
 #pragma pack(push, 1)
 struct R_DATA
 {
@@ -76,7 +81,7 @@ struct R_DATA
 };
 #pragma pack(pop)
 
-//Punteros a los contenidos del registro de recursos
+//Estructura de Respuestas
 struct RES_RECORD
 {
     unsigned char * name;
@@ -101,8 +106,14 @@ int obtenerPos(char);
 unsigned int getLatLonAlt(unsigned int n_lla[]);
 
 
-/* takes an on-the-wire LOC RR and prints it in zone file
- * (human readable) format. */
+/* 	
+	Procedimiento loc_ntoa
+
+	Devuelve los datos obtenidos por una respuesta de tipo LOC de manera
+	amigable al usuario. Este procedimiento fue sacado (y modificado) del Anexo del 
+	"RFC 1876 - A Means for Expressing Location Information in the Domain Name System"
+	(https://tools.ietf.org/html/rfc1876)
+ */
 char *
 loc_ntoa(int i_latval, int i_longval, int i_altval)
 {
@@ -175,14 +186,12 @@ loc_ntoa(int i_latval, int i_longval, int i_altval)
 }
 
 
-/**
- * Funcion que retorna una subcadena de caracteres de tamaño n, comenzando desde la posicion beg, de 
- * la string str
- * Parametros:
- * char* str - Cadena de caracteres original
- * int beg - Comienzo de subcadena
- * int n - Longitud de subcadena
- * */
+/*
+ 	Meétodo substring
+
+ 	Retorna una subcadena de caracteres de tamaño n, comenzando desde la posicion beg, de la string str.
+
+ */
 char* substring(const char* str, int beg, int n)
 {
    char *sub = malloc(n+1); 
@@ -193,8 +202,11 @@ char* substring(const char* str, int beg, int n)
 }
 
 /*
- * Método Consultar
- * */
+ 	Método Consultar
+
+ 	Se encarga de enviar consultas dns a un servidor, asi como también de recibir y mostrar por pantalla
+ 	las respuestas obtenidas.
+ */
 char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q_type, int is_rec, int modoPrint)
 {
 	char * salidaIP = NULL;
@@ -211,7 +223,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     if((sock = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP)) < 0)
 	{
    		perror("- Error al crear el socket -");
-		exit(Sock_Creat);
+		exit(ERR_SOCK_CREAT);
 	}
 	else
 	{
@@ -221,6 +233,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     dest.sin_family = AF_INET;
     dest.sin_port = htons(n_port);
     dest.sin_addr.s_addr = inet_addr(ip_dns);
+
     //Seteamos la estructura del encabezado DNS como una consulta estandar
     dns_h = (struct DNS_HEADER *) &buf;
  
@@ -229,7 +242,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     dns_h->opcode = 0000; 			
     dns_h->aa = 0; 				
     dns_h->tc = 0;				
-    dns_h->rd = 1; 		
+    dns_h->rd = is_rec; 		
     dns_h->ra = 0; 				
     dns_h->z = 0;
     dns_h->ad = 1;
@@ -267,7 +280,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
    	if( sendto(sock, (char*) buf, sizeof(struct DNS_HEADER) + (strlen((const char *)qname)+1) + sizeof(struct QUESTION), 0, (struct sockaddr *) &dest, sizeof(dest)) < 0)
     {
         perror("- Error al enviar la consulta -");
-        exit(Err_Env);
+        exit(ERR_ENV);
     }
     else
     {
@@ -282,7 +295,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     if(byte_count = recvfrom (sock, (char *) buf, sizeof(buf)-1, 0, (struct sockaddr*) &dest, (socklen_t *)&i ) < 0)
     {
         perror("- Error al recibir la respuesta -");
-        exit(Err_Rec);
+        exit(ERR_ENV);
     }
     else
     {
@@ -337,7 +350,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
         		break;
 
         	}
-        	case T_NS:
+        	case T_NS:	//Si se recibe una respuesta de tipo NS
         	{
         		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
 
@@ -360,7 +373,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
         		if(modoPrint)  	printf("[Rt%i]\tHost: %s\t\t Tipo de respuesta: NS\t\tServidor: %s\n", i+1, host, d_sv);
         		break;
         	}
-        	case T_CNAME:
+        	case T_CNAME:	//Si se recibe una respuesta de tipo CNAME
         	{
         		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
 
@@ -374,7 +387,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
         		if(modoPrint)  	printf("[Rt%i]\tTipo CNAME\n", i+1);
         		break;
         	}
-        	case T_MX: //Si es una consulta de servidor de correo electrónico
+        	case T_MX:	//Si es una consulta de servidor de correo electrónico
         	{
         		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
 
@@ -393,7 +406,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            break;
 
         	}
-        	case T_AAAA:
+        	case T_AAAA:	//Si se recibe una respuesta de tipo AAAA
         	{
         		resp[i].rdata = (unsigned char*)malloc(ntohs(resp[i].resource->data_len));
 
@@ -447,7 +460,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            break;
 
         	}
-        	default:
+        	default:	//Si se recibe una respuesta de tipo Desconocido
         	{
         		if(modoPrint)  	printf("[Rt%i]\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
         	};
@@ -493,7 +506,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 
         switch (tipo)
         {
-        	case T_A:		//Si es una consulta de conversión de nombre
+        	case T_A:		//Si se recibe una respuesta Adicional de tipo A
         	{
         		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
@@ -518,7 +531,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
             	if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: A\t\tDirección IPv4: %s\n", i+1, adic[i].name, inet_ntoa(sai.sin_addr));
         		break;
         	}
-        	case T_NS:
+        	case T_NS:	//Si se recibe una respuesta Adicional de tipo NS
         	{
         		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
@@ -541,7 +554,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
         		if(modoPrint)  	printf("[Ad%i]\tHost: %s\t Tipo de respuesta: NS\t\tServidor: %s\n", i+1, adic[i].name, d_sv);
         		break;
         	}
-        	case T_CNAME:
+        	case T_CNAME:	//Si se recibe una respuesta Adicional de tipo NS
         	{
         		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
@@ -575,7 +588,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            break;
 
         	}
-        	case T_AAAA:
+        	case T_AAAA:	//Si se recibe una respuesta Adicional de tipo AAAA
         	{
         		adic[i].rdata = (unsigned char*)malloc(ntohs(adic[i].resource->data_len));
 
@@ -629,7 +642,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 	            if(modoPrint)  	printf("\t\t%s\n", respuesta);
                 break;
         	}
-        	default:
+        	default:	//Si se recibe una respuesta Adicional de tipo Desconocido
         	{
         		if(modoPrint)  	printf("[Ad%i]\tNada que mostrar. Se recibió un tipo de respuesta no soportado.\n",i+1);
         	}
@@ -639,7 +652,7 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
 
     if(salidaIP!=NULL)
     {
-    	return salidaIP;
+    	return salidaIP;	//Priorizo las direcciones IPv4 antes que las direcciones de nombre
     }
     else
     {
@@ -647,9 +660,15 @@ char * consultar(unsigned char * host, unsigned char * ip_dns, int n_port, int q
     }
 }
 
+/*
+	Método getLatLonAlt
+
+	Convierte un cuarteto de enteros (4 números Hexa en representación decimal)
+	a repesentación decimal.
+*/
 unsigned int getLatLonAlt(unsigned int n_lla[])
 {
-	unsigned int aux = 0;//(unsigned int)*n_lat;
+	unsigned int aux = 0;
     for(int j=0;j<4;j++)
     {
     	aux = aux *256 + n_lla[j];
@@ -663,9 +682,10 @@ unsigned int getLatLonAlt(unsigned int n_lla[])
 
 	Transforma la dirección host a formato DNS.
 	Convierte los '.' en la cantidad de caracteres hasta el próximo punto
-	Ejemplo: cs.uns.edu.ar -> 2cs3uns3edu2ar0
+	Ej:	IN 	>	cs.uns.edu.ar
+		OUT >	2cs3uns3edu2ar0
 
- */
+*/
 int convertirAMetros(int n_hex[]) 
 {
     int salida = (n_hex[0]*pow(10,n_hex[1]))/100;
@@ -677,11 +697,10 @@ int convertirAMetros(int n_hex[])
 /*
 	Método pasarAHexa
 
-	Transforma la dirección host a formato DNS.
-	Convierte los '.' en la cantidad de caracteres hasta el próximo punto
-	Ejemplo: cs.uns.edu.ar -> 2cs3uns3edu2ar0
+	Recibe un entero de dos cifras y devuelve una dupla
+	de dichas cifras en Hexa.
 
- */
+*/
 void pasarAHexa(int entero, int n_hex[]) 
 {
 	n_hex[0] = entero / 16;
@@ -693,7 +712,8 @@ void pasarAHexa(int entero, int n_hex[])
 
 	Transforma la dirección host a formato DNS.
 	Convierte los '.' en la cantidad de caracteres hasta el próximo punto
-	Ejemplo: cs.uns.edu.ar -> 2cs3uns3edu2ar0
+	Ej: IN 	>	cs.uns.edu.ar
+		OUT	>	2cs3uns3edu2ar0
 
  */
 void formatoDNS(unsigned char* dns, unsigned char* host) 
@@ -710,7 +730,7 @@ void formatoDNS(unsigned char* dns, unsigned char* host)
             {
                 *dns++=host[lock];
             }
-            lock++; //or lock=i+1;
+            lock++;
         }
     }
     *dns++='\0';
@@ -720,7 +740,8 @@ void formatoDNS(unsigned char* dns, unsigned char* host)
 	Método LeerHost
 
 	Lee los nombres de Host de formato DNS y los transforma a nombres de Host normales
-	Ejemplo: 2cs3uns3edu2ar0 -> cs.uns.edu.ar
+	Ej: IN 	>	2cs3uns3edu2ar0
+		OUT	>	cs.uns.edu.ar
  */
 u_char* leerHost(unsigned char* _lec, char _buff[], int* _cont)
 {

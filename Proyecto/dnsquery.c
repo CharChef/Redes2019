@@ -89,7 +89,7 @@ void ayuda(int completa)
             printf("@servidor\t\tServidor DNS con el que se resolvera la consulta.\n\t\t\tSi no se determina se usa el servidor DNS por defecto.\n");
             printf(":puerto\t\t\tPuerto DNS con el cual el servidor que resolvera la consulta esta ligado.\n\t\t\tSi no se determina se utiliza el puerto DNS estandar (53).\n");
             printf("-a\t\t\tConsulta de resolución de nombre.\n");
-            printf("-mx\t\t\tSevidor a cargo de la recepción de correo electrónico para el dominio indicado en la consulta.\n");
+            printf("-mx\t\t\tServidor a cargo de la recepción de correo electrónico para el dominio indicado en la consulta.\n");
             printf("-loc\t\t\tInformación relativa a la localización geográfica del dominio indicado en la consulta.\n");
             printf("-r\t\t\tConsulta Recursiva.\n");
             printf("-t\t\t\tConsulta Iterativa.\n");
@@ -239,10 +239,10 @@ void ayudaT(){
 }
 
 /*
-	Método masticarParametros
+	Método procesarParametros
 	Recibe los parámetros y setea las opciones ingresadas.
 */
-void masticarParametros(int argc, char *argv[])
+void procesarParametros(int argc, char *argv[])
 {
 	int i=0;
 	char* parametro;
@@ -315,7 +315,7 @@ void masticarParametros(int argc, char *argv[])
 void main(int argc, char *argv[])
 {                   
 	int help = 0;
-	masticarParametros(argc,argv);
+	procesarParametros(argc,argv);
 	if((argc==1) || (_h!=0))
 	{
 		//un solo parametro o -h activado

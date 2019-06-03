@@ -102,7 +102,6 @@ void formatoDNS (unsigned char *, unsigned char *);
 unsigned char* leerHost (unsigned char *, char buf[], int *);
 int convertirAMetros(int n_hex[]);
 void pasarAHexa(int, int n_hex[]);
-int obtenerPos(char);
 unsigned int getLatLonAlt(unsigned int n_lla[]);
 
 
